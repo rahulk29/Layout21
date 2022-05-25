@@ -132,6 +132,26 @@ pub struct Instance {
     /// Clockwise and applied *after* reflection
     pub angle: Option<f64>,
 }
+impl Instance {
+    pub fn bbox(&self) -> BoundBox {
+        let inner = {
+            let cell = self.cell.read().unwrap();
+            cell.layout.as_ref().unwrap().bbox()
+        };
+
+        let r = Rect {
+            p0: inner.p0,
+            p1: inner.p1,
+        };
+
+        let r = r.transform(&Transform::from_instance(&self.loc, self.reflect_vert, self.angle));
+
+        BoundBox {
+            p0: r.p0,
+            p1: r.p1,
+        }
+    }
+}
 
 /// # Layer Set & Manager
 ///
@@ -464,9 +484,7 @@ impl Layout {
             bbox = elem.inner.union(&bbox);
         }
         for inst in &self.insts {
-            let cell = inst.cell.read().unwrap();
-            let lay = cell.layout.as_ref().unwrap();
-            let b = lay.bbox();
+            let b = inst.bbox();
             let s = Shape::Rect(Rect {
                 p0: b.p0,
                 p1: b.p1,

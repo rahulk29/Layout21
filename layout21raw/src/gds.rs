@@ -206,12 +206,10 @@ impl<'lib> GdsExporter<'lib> {
         purpose: &LayerPurpose,
     ) -> LayoutResult<gds21::GdsLayerSpec> {
         let layers = self.lib.layers.read()?;
-        println!("checking layer purpose: {:?} {:?}", layer, purpose);
         let layer = self.unwrap(
             layers.get(*layer),
             format!("Layer {:?} Not Defined in Library {}", layer, self.lib.name),
         )?;
-        println!("found layer {:?}", &layer);
         let xtype = self
             .unwrap(
                 layer.num(purpose),

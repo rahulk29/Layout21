@@ -461,9 +461,18 @@ impl TransformTrait for Rect {
     /// Creates a new shape at a location equal to the transformation of our own.
     fn transform(&self, trans: &Transform) -> Self {
         let (p0, p1) = (&self.p0, &self.p1);
+        let p0p = p0.transform(trans);
+        let p1p = p1.transform(trans);
+
+        let p0 = p0p;
+        let p1 = p1p;
+
+        let p0 = Point::new(std::cmp::min(p0.x, p1.x), std::cmp::min(p0.y, p1.y));
+        let p1 = Point::new(std::cmp::max(p0.x, p1.x), std::cmp::max(p0.y, p1.y));
+
         Rect {
-            p0: p0.transform(trans),
-            p1: p1.transform(trans),
+            p0,
+            p1,
         }
     }
 }
