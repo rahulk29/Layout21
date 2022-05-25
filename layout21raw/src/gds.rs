@@ -206,10 +206,12 @@ impl<'lib> GdsExporter<'lib> {
         purpose: &LayerPurpose,
     ) -> LayoutResult<gds21::GdsLayerSpec> {
         let layers = self.lib.layers.read()?;
+        println!("checking layer purpose: {:?} {:?}", layer, purpose);
         let layer = self.unwrap(
             layers.get(*layer),
             format!("Layer {:?} Not Defined in Library {}", layer, self.lib.name),
         )?;
+        println!("found layer {:?}", &layer);
         let xtype = self
             .unwrap(
                 layer.num(purpose),
@@ -918,8 +920,8 @@ impl GdsImporter {
         elem: &impl gds21::HasLayer,
     ) -> LayoutResult<(LayerKey, LayerPurpose)> {
         let spec = elem.layerspec();
-        let mut layers = self.layers.write()?;
-        layers.get_or_insert(spec.layer, spec.xtype)
+        let layers = self.layers.write()?;
+        layers.get_from_spec(spec.layer, spec.xtype).ok_or(LayoutError::msg("Layer Not Found"))
     }
 }
 impl ErrorHelper for GdsImporter {

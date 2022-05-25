@@ -607,10 +607,11 @@ impl ProtoImporter {
         // FIXME: maybe a bigger-size type for these layer numbers.
         let num = i16::try_from(player.number)?;
         let purpose = i16::try_from(player.purpose)?;
-        let mut layers = self.layers.write()?;
-        layers.get_or_insert(num, purpose)
+        let layers = self.layers.write()?;
+        layers.get_from_spec(num, purpose).ok_or(LayoutError::msg("Layer Not Found"))
     }
 }
+
 impl ErrorHelper for ProtoImporter {
     type Error = LayoutError;
     fn err(&self, msg: impl Into<String>) -> LayoutError {
