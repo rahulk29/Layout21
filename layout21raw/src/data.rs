@@ -13,6 +13,7 @@ use std::hash::Hash;
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SlotMap};
 
+use crate::Rect;
 // Local Imports
 use crate::{
     bbox::{BoundBox, BoundBoxTrait},
@@ -165,18 +166,9 @@ impl Layers {
         }
         LayoutError::fail("No more layer numbers available")
     }
-    /// Get a reference to the [LayerKey] for layer-number `num`
-    pub fn keynum(&self, num: i16) -> Option<LayerKey> {
-        self.nums.get(&num).map(|x| x.clone())
-    }
     /// Get a reference to the [LayerKey] layer-name `name`
     pub fn keyname(&self, name: impl Into<String>) -> Option<LayerKey> {
         self.names.get(&name.into()).map(|x| x.clone())
-    }
-    /// Get a reference to [Layer] number `num`
-    pub fn num(&self, num: i16) -> Option<&Layer> {
-        let key = self.nums.get(&num)?;
-        self.slots.get(*key)
     }
     /// Get a reference to [Layer] name `name`
     pub fn name(&self, name: &str) -> Option<&Layer> {
@@ -192,39 +184,19 @@ impl Layers {
     pub fn get(&self, key: LayerKey) -> Option<&Layer> {
         self.slots.get(key)
     }
-    /// Get the ([LayerKey], [LayerPurpose]) objects for numbers (`layernum`, `purposenum`) if present.
-    /// Inserts a new [Layer] if `layernum` is not present.
-    /// Returns `LayerPurpose::Other(purposenum)` if `purposenum` is not present on that layer.
-    pub fn get_or_insert(
-        &mut self,
-        layernum: i16,
-        purposenum: i16,
-    ) -> LayoutResult<(LayerKey, LayerPurpose)> {
-        // Get the [LayerKey] for `layernum`, creating the [Layer] if it doesn't exist.
-        let key = match self.keynum(layernum) {
-            Some(key) => key.clone(),
-            None => self.add(Layer::from_num(layernum)),
-        };
-        // Slightly awkwardly, get that [Layer] (back), so we can get or add a [LayerPurpose]
-        let layer = self
-            .slots
-            .get_mut(key)
-            .ok_or(LayoutError::msg("Layer Not Found"))?;
-        // Get or create the corresponding [LayerPurpose]
-        let purpose = match layer.purpose(purposenum) {
-            Some(purpose) => purpose.clone(),
-            None => {
-                // Create a new anonymous/ numbered layer-purpose
-                let purpose = LayerPurpose::Other(purposenum);
-                layer.add_purpose(purposenum, purpose.clone())?;
-                purpose
-            }
-        };
-        Ok((key, purpose))
-    }
     /// Get a shared reference to the internal <[LayerKey], [Layer]> map
     pub fn slots(&self) -> &SlotMap<LayerKey, Layer> {
         &self.slots
+    }
+
+    pub fn get_from_spec(&self, num: i16, purpose: i16) -> Option<(LayerKey, LayerPurpose)> {
+        for (k, layer) in self.slots().iter() {
+            if layer.layernum != num { continue; }
+            if let Some(purpose) = layer.purpose(purpose) {
+                return Some((k, purpose.clone()));
+            }
+        }
+        None
     }
 }
 /// Layer-Purpose Enumeration
@@ -379,6 +351,7 @@ pub struct Library {
     /// Cell Definitions
     pub cells: PtrList<Cell>,
 }
+
 impl Library {
     /// Create a new and empty Library
     pub fn new(name: impl Into<String>, units: Units) -> Self {
@@ -489,6 +462,16 @@ impl Layout {
         let mut bbox = BoundBox::empty();
         for elem in &self.elems {
             bbox = elem.inner.union(&bbox);
+        }
+        for inst in &self.insts {
+            let cell = inst.cell.read().unwrap();
+            let lay = cell.layout.as_ref().unwrap();
+            let b = lay.bbox();
+            let s = Shape::Rect(Rect {
+                p0: b.p0,
+                p1: b.p1,
+            });
+            bbox = s.union(&bbox);
         }
         bbox
     }

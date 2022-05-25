@@ -28,6 +28,14 @@ impl BoundBox {
     fn new(p0: Point, p1: Point) -> Self {
         Self { p0, p1 }
     }
+    #[inline]
+    pub fn width(&self) -> Int {
+        self.p1.x - self.p0.x
+    }
+    #[inline]
+    pub fn height(&self) -> Int {
+        self.p1.y - self.p0.y
+    }
     /// Create a new [BoundBox] from a single [Point].
     /// The resultant [BoundBox] comprises solely the point, having zero area.
     pub fn from_point(pt: &Point) -> Self {
