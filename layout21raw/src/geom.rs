@@ -464,11 +464,8 @@ impl TransformTrait for Rect {
         let p0p = p0.transform(trans);
         let p1p = p1.transform(trans);
 
-        let p0 = p0p;
-        let p1 = p1p;
-
-        let p0 = Point::new(std::cmp::min(p0.x, p1.x), std::cmp::min(p0.y, p1.y));
-        let p1 = Point::new(std::cmp::max(p0.x, p1.x), std::cmp::max(p0.y, p1.y));
+        let p0 = Point::new(std::cmp::min(p0p.x, p1p.x), std::cmp::min(p0p.y, p1p.y));
+        let p1 = Point::new(std::cmp::max(p0p.x, p1p.x), std::cmp::max(p0p.y, p1p.y));
 
         Rect {
             p0,
