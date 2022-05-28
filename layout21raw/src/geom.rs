@@ -467,10 +467,7 @@ impl TransformTrait for Rect {
         let p0 = Point::new(std::cmp::min(p0p.x, p1p.x), std::cmp::min(p0p.y, p1p.y));
         let p1 = Point::new(std::cmp::max(p0p.x, p1p.x), std::cmp::max(p0p.y, p1p.y));
 
-        Rect {
-            p0,
-            p1,
-        }
+        Rect { p0, p1 }
     }
 }
 impl TransformTrait for Polygon {

@@ -18,7 +18,7 @@ use crate::Rect;
 use crate::{
     bbox::{BoundBox, BoundBoxTrait},
     error::{LayoutError, LayoutResult},
-    geom::{Point, Shape,  Transform, TransformTrait},
+    geom::{Point, Shape, Transform, TransformTrait},
     utils::{Ptr, PtrList},
 };
 
@@ -144,12 +144,13 @@ impl Instance {
             p1: inner.p1,
         };
 
-        let r = r.transform(&Transform::from_instance(&self.loc, self.reflect_vert, self.angle));
+        let r = r.transform(&Transform::from_instance(
+            &self.loc,
+            self.reflect_vert,
+            self.angle,
+        ));
 
-        BoundBox {
-            p0: r.p0,
-            p1: r.p1,
-        }
+        BoundBox { p0: r.p0, p1: r.p1 }
     }
 
     pub fn align_left_to_right(&mut self, other: &Self) -> &mut Self {
@@ -243,7 +244,9 @@ impl Layers {
 
     pub fn get_from_spec(&self, num: i16, purpose: i16) -> Option<(LayerKey, LayerPurpose)> {
         for (k, layer) in self.slots().iter() {
-            if layer.layernum != num { continue; }
+            if layer.layernum != num {
+                continue;
+            }
             if let Some(purpose) = layer.purpose(purpose) {
                 return Some((k, purpose.clone()));
             }
@@ -517,10 +520,7 @@ impl Layout {
         }
         for inst in &self.insts {
             let b = inst.bbox();
-            let s = Shape::Rect(Rect {
-                p0: b.p0,
-                p1: b.p1,
-            });
+            let s = Shape::Rect(Rect { p0: b.p0, p1: b.p1 });
             bbox = s.union(&bbox);
         }
         bbox

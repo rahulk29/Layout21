@@ -12,7 +12,7 @@ use std::convert::{TryFrom, TryInto};
 use crate::utils::{ErrorContext, ErrorHelper, Ptr};
 use crate::{
     Abstract, AbstractPort, Cell, Element, Int, Layer, LayerKey, LayerPurpose, Layers, LayoutError,
-    LayoutResult, Library, Path, Point, Polygon, Rect, Shape,  Units,
+    LayoutResult, Library, Path, Point, Polygon, Rect, Shape, Units,
 };
 use lef21;
 

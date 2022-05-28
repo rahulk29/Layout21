@@ -184,7 +184,7 @@ impl<'lib> GdsExporter<'lib> {
         if inst.reflect_vert || inst.angle.is_some() {
             let angle = inst.angle.map(|a| f64::from(a));
             strans = Some(gds21::GdsStrans {
-                reflected: true,
+                reflected: inst.reflect_vert,
                 angle,
                 ..Default::default()
             });
@@ -354,9 +354,9 @@ impl ErrorHelper for GdsExporter<'_> {
 ///
 /// Trait for calculating the location of text-labels, generally per [Shape].
 ///
-/// Sole function `label_location` calculates an appropriate location, 
-/// or returns a [LayoutError] if one cannot be found. 
-/// 
+/// Sole function `label_location` calculates an appropriate location,
+/// or returns a [LayoutError] if one cannot be found.
+///
 /// While Layout21 formats do not include "placed text", GDSII relies on it for connectivity annotations.
 /// How to place these labels varies by shape type.
 ///
@@ -919,7 +919,9 @@ impl GdsImporter {
     ) -> LayoutResult<(LayerKey, LayerPurpose)> {
         let spec = elem.layerspec();
         let layers = self.layers.write()?;
-        layers.get_from_spec(spec.layer, spec.xtype).ok_or(LayoutError::msg("Layer Not Found"))
+        layers
+            .get_from_spec(spec.layer, spec.xtype)
+            .ok_or(LayoutError::msg("Layer Not Found"))
     }
 }
 impl ErrorHelper for GdsImporter {

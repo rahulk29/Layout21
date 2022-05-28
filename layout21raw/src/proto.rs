@@ -608,7 +608,9 @@ impl ProtoImporter {
         let num = i16::try_from(player.number)?;
         let purpose = i16::try_from(player.purpose)?;
         let layers = self.layers.write()?;
-        layers.get_from_spec(num, purpose).ok_or(LayoutError::msg("Layer Not Found"))
+        layers
+            .get_from_spec(num, purpose)
+            .ok_or(LayoutError::msg("Layer Not Found"))
     }
 }
 
