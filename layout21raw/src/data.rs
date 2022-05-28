@@ -151,6 +151,38 @@ impl Instance {
             p1: r.p1,
         }
     }
+
+    pub fn align_left_to_right(&mut self, other: &Self) -> &mut Self {
+        let sbox = self.bbox();
+        let obox = other.bbox();
+
+        self.loc.x += obox.p1.x - sbox.p0.x;
+        self
+    }
+
+    pub fn align_top_to_bottom(&mut self, other: &Self) -> &mut Self {
+        let sbox = self.bbox();
+        let obox = other.bbox();
+
+        self.loc.y += obox.p0.y - sbox.p1.y;
+        self
+    }
+
+    pub fn align_bottoms(&mut self, other: &Self) -> &mut Self {
+        let sbox = self.bbox();
+        let obox = other.bbox();
+
+        self.loc.y += obox.p0.y - sbox.p0.y;
+        self
+    }
+
+    pub fn align_lefts(&mut self, other: &Self) -> &mut Self {
+        let sbox = self.bbox();
+        let obox = other.bbox();
+
+        self.loc.x += obox.p0.x - sbox.p0.x;
+        self
+    }
 }
 
 /// # Layer Set & Manager
