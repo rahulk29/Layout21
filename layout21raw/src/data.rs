@@ -184,6 +184,15 @@ impl Instance {
         self.loc.x += obox.p0.x - sbox.p0.x;
         self
     }
+
+    pub fn reflect_vert_anchored(&mut self) -> &mut Self {
+        let box0 = self.bbox();
+        self.reflect_vert = !self.reflect_vert;
+
+        let box1 = self.bbox();
+        self.loc.y += box0.p0.y - box1.p0.y;
+        self
+    }
 }
 
 /// # Layer Set & Manager
