@@ -132,6 +132,17 @@ pub struct Instance {
     /// Clockwise and applied *after* reflection
     pub angle: Option<f64>,
 }
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum AlignMode {
+    Left,
+    Right,
+    CenterHorizontal,
+    CenterVertical,
+    ToTheRight,
+    ToTheLeft,
+}
+
 impl Instance {
     pub fn bbox(&self) -> BoundBox {
         let inner = {
@@ -153,12 +164,37 @@ impl Instance {
         BoundBox { p0: r.p0, p1: r.p1 }
     }
 
-    pub fn align_left_to_right(&mut self, other: &Self) -> &mut Self {
+    pub fn align(&mut self, other: &Self, mode: AlignMode, spacing: Int) -> &mut Self {
         let sbox = self.bbox();
         let obox = other.bbox();
 
-        self.loc.x += obox.p1.x - sbox.p0.x;
+        match mode {
+            AlignMode::Left => {
+                self.loc.x += obox.p0.x - sbox.p0.x + spacing;
+            },
+            AlignMode::Right => {
+                self.loc.x += obox.p1.x - sbox.p1.x + spacing;
+            },
+            AlignMode::ToTheRight => {
+                self.loc.x += obox.p1.x - sbox.p0.x + spacing;
+            },
+            AlignMode::ToTheLeft => {
+                self.loc.x += obox.p0.x - sbox.p1.x - spacing;
+            },
+            AlignMode::CenterHorizontal => {
+                self.loc.x += ((obox.p0.x + obox.p1.x) - (sbox.p0.x + sbox.p1.x))/2 + spacing;
+            }
+            AlignMode::CenterVertical => {
+                self.loc.y += ((obox.p0.y + obox.p1.y) - (sbox.p0.y + sbox.p1.y))/2 + spacing;
+            }
+        }
+
         self
+    }
+
+    #[inline]
+    pub fn align_left_to_right(&mut self, other: &Self) -> &mut Self {
+        self.align(other, AlignMode::ToTheRight, 0)
     }
 
     pub fn align_top_to_bottom(&mut self, other: &Self) -> &mut Self {
@@ -177,12 +213,9 @@ impl Instance {
         self
     }
 
+    #[inline]
     pub fn align_lefts(&mut self, other: &Self) -> &mut Self {
-        let sbox = self.bbox();
-        let obox = other.bbox();
-
-        self.loc.x += obox.p0.x - sbox.p0.x;
-        self
+        self.align(other, AlignMode::Left, 0)
     }
 
     pub fn reflect_vert_anchored(&mut self) -> &mut Self {
@@ -191,6 +224,21 @@ impl Instance {
 
         let box1 = self.bbox();
         self.loc.y += box0.p0.y - box1.p0.y;
+        self
+    }
+
+    pub fn reflect_horiz_anchored(&mut self) -> &mut Self {
+        let box0 = self.bbox();
+        self.reflect_vert = !self.reflect_vert;
+        self.angle = self.angle.map(|d| d + 180f64);
+
+        let box1 = self.bbox();
+        self.loc.x += box0.p0.x - box1.p0.x;
+        self.loc.y += box0.p0.y - box1.p0.y;
+
+        let final_box = self.bbox();
+        assert_eq!(final_box, box0);
+
         self
     }
 }
