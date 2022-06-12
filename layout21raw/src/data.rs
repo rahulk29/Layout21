@@ -141,6 +141,7 @@ pub enum AlignMode {
     CenterVertical,
     ToTheRight,
     ToTheLeft,
+    Beneath,
 }
 
 impl Instance {
@@ -149,6 +150,10 @@ impl Instance {
             let cell = self.cell.read().unwrap();
             cell.layout.as_ref().unwrap().bbox()
         };
+
+        if inner.is_empty() {
+            return inner;
+        }
 
         let r = Rect {
             p0: inner.p0,
@@ -187,6 +192,10 @@ impl Instance {
             AlignMode::CenterVertical => {
                 self.loc.y += ((obox.p0.y + obox.p1.y) - (sbox.p0.y + sbox.p1.y))/2 + spacing;
             }
+            AlignMode::Beneath => {
+                println!("{} {} {}", obox.p0.y, sbox.p1.y, spacing);
+                self.loc.y += obox.p0.y - sbox.p1.y - spacing;
+            },
         }
 
         self
@@ -230,7 +239,7 @@ impl Instance {
     pub fn reflect_horiz_anchored(&mut self) -> &mut Self {
         let box0 = self.bbox();
         self.reflect_vert = !self.reflect_vert;
-        self.angle = self.angle.map(|d| d + 180f64);
+        self.angle = Some(self.angle.unwrap_or(0f64) + 180f64);
 
         let box1 = self.bbox();
         self.loc.x += box0.p0.x - box1.p0.x;
@@ -577,8 +586,10 @@ impl Layout {
         }
         for inst in &self.insts {
             let b = inst.bbox();
-            let s = Shape::Rect(Rect { p0: b.p0, p1: b.p1 });
-            bbox = s.union(&bbox);
+            if !b.is_empty() {
+                let s = Shape::Rect(Rect { p0: b.p0, p1: b.p1 });
+                bbox = s.union(&bbox);
+            }
         }
         bbox
     }
