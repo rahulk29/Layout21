@@ -422,7 +422,7 @@ pub struct Abstract {
     /// Cell Name
     pub name: String,
     /// Outline
-    pub outline: Element,
+    pub outline: Option<Element>,
     /// Ports
     pub ports: Vec<AbstractPort>,
     /// Blockages
@@ -430,11 +430,11 @@ pub struct Abstract {
 }
 impl Abstract {
     /// Create a new [Abstract] with the given `name`
-    pub fn new(name: impl Into<String>, outline: Element) -> Self {
+    pub fn new(name: impl Into<String>) -> Self {
         let name = name.into();
         Self {
             name,
-            outline,
+            outline: None,
             ports: Vec::new(),
             blockages: HashMap::new(),
         }

@@ -106,7 +106,9 @@ impl<'lib> ProtoExporter<'lib> {
                 .push(self.export_abstract_blockages(layerkey, shapes)?);
         }
         // Convert its outline
-        pabs.outline = Some(self.export_abstract_outline(&abs.outline)?);
+        if let Some(ref outline) = abs.outline {
+            pabs.outline = Some(self.export_abstract_outline(outline)?);
+        }
         // And we're done - pop the context and return
         self.ctx.pop();
         Ok(pabs)

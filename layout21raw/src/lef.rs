@@ -282,7 +282,8 @@ impl LefImporter {
             }
         };
         // Create the [Abstract] to be returned
-        let mut abs = Abstract::new(&lefmacro.name, outline);
+        let mut abs = Abstract::new(&lefmacro.name);
+        abs.outline = Some(outline);
         // Import all pins
         for lefpin in &lefmacro.pins {
             let abs_port = self.import_pin(lefpin)?;
@@ -483,7 +484,7 @@ mod tests {
         let layers = crate::tests::layers()?;
         let a = Abstract {
             name: "to_lef1".into(),
-            outline: Element {
+            outline: Some(Element {
                 net: None,
                 layer: layers.keyname("boundary").unwrap(),
                 purpose: LayerPurpose::Outline,
@@ -491,7 +492,7 @@ mod tests {
                     p0: Point::new(0, 0),
                     p1: Point::new(11, 11),
                 }),
-            },
+            }),
             ports: vec![AbstractPort {
                 net: "port1".into(),
                 // Collect a hashmap of shapes from (LayerKey, Vec<Shape>) pairs

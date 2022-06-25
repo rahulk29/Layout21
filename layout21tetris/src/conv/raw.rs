@@ -442,7 +442,8 @@ impl<'lib> RawExporter {
         let outline = self.export_outline(&abs.outline)?;
         let outline_shape = outline.inner.clone();
         // Create the raw abstract
-        let mut rawabs = raw::Abstract::new(&abs.name, outline);
+        let mut rawabs = raw::Abstract::new(&abs.name);
+        rawabs.outline = Some(outline);
 
         // Draw a blockage on each layer, equal to the shape of the outline
         for layerindex in 0..abs.metals {

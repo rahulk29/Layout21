@@ -120,7 +120,9 @@ impl<'lib> GdsExporter<'lib> {
 
         // Blockages do not map to GDSII elements.
         // Conversion includes the abstract's name, outline and ports.
-        elems.extend(self.export_element(&abs.outline)?);
+        if let Some(ref outline) = abs.outline {
+            elems.extend(self.export_element(outline)?);
+        }
 
         // Convert each [AbstractPort]
         for port in abs.ports.iter() {
