@@ -439,6 +439,11 @@ impl Abstract {
             blockages: HashMap::new(),
         }
     }
+
+    pub fn add_port(&mut self, port: AbstractPort) -> &mut Self {
+        self.ports.push(port);
+        self
+    }
 }
 /// # Port Element for [Abstract]s
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -456,6 +461,12 @@ impl AbstractPort {
             net,
             shapes: HashMap::new(),
         }
+    }
+
+    pub fn add_shape(&mut self, layer: LayerKey, shape: Shape) -> &mut Self {
+        let v = self.shapes.entry(layer).or_insert(Vec::with_capacity(1));
+        v.push(shape);
+        self
     }
 }
 
