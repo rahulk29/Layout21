@@ -632,8 +632,11 @@ fn proto1() -> LayoutResult<()> {
     // Round-trip through Layout21::Raw -> ProtoBuf -> Layout21::Raw
     let mut lib = Library::new("prt_lib", Units::Nano);
     let (layer, purpose) = {
+        use crate::Layer;
+        let mut layer = Layer::new(0, "prt_layer");
+        layer.add_purpose(0, LayerPurpose::Drawing);
         let mut layers = lib.layers.write()?;
-        layers.get_or_insert(0, 0)?
+        (layers.add(layer), LayerPurpose::Drawing)
     };
     let c1 = lib.cells.insert(Layout {
         name: "prt_cell".into(),

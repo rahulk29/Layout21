@@ -66,6 +66,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[ignore = "requires layer config info"]
     fn roundtrip_to_golden_file() {
         // The golden file was created by running the program:
         // $ cargo run -- \
