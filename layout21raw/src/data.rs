@@ -176,26 +176,26 @@ impl Instance {
         match mode {
             AlignMode::Left => {
                 self.loc.x += obox.p0.x - sbox.p0.x + spacing;
-            },
+            }
             AlignMode::Right => {
                 self.loc.x += obox.p1.x - sbox.p1.x + spacing;
-            },
+            }
             AlignMode::ToTheRight => {
                 self.loc.x += obox.p1.x - sbox.p0.x + spacing;
-            },
+            }
             AlignMode::ToTheLeft => {
                 self.loc.x += obox.p0.x - sbox.p1.x - spacing;
-            },
+            }
             AlignMode::CenterHorizontal => {
-                self.loc.x += ((obox.p0.x + obox.p1.x) - (sbox.p0.x + sbox.p1.x))/2 + spacing;
+                self.loc.x += ((obox.p0.x + obox.p1.x) - (sbox.p0.x + sbox.p1.x)) / 2 + spacing;
             }
             AlignMode::CenterVertical => {
-                self.loc.y += ((obox.p0.y + obox.p1.y) - (sbox.p0.y + sbox.p1.y))/2 + spacing;
+                self.loc.y += ((obox.p0.y + obox.p1.y) - (sbox.p0.y + sbox.p1.y)) / 2 + spacing;
             }
             AlignMode::Beneath => {
                 println!("{} {} {}", obox.p0.y, sbox.p1.y, spacing);
                 self.loc.y += obox.p0.y - sbox.p1.y - spacing;
-            },
+            }
         }
 
         self
@@ -466,6 +466,11 @@ impl AbstractPort {
     pub fn add_shape(&mut self, layer: LayerKey, shape: Shape) -> &mut Self {
         let v = self.shapes.entry(layer).or_insert(Vec::with_capacity(1));
         v.push(shape);
+        self
+    }
+
+    pub fn set_net(&mut self, net: impl Into<String>) -> &mut Self {
+        self.net = net.into();
         self
     }
 }
