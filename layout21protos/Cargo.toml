@@ -10,5 +10,5 @@ version = "0.2.1"
 workspace = "../"
 
 [dependencies]
-vlsir = { path = "../../Vlsir/bindings/rust" }
+vlsir = { git = "https://github.com/rahulk29/Vlsir.git", branch = "main" }
 
