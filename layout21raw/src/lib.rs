@@ -11,10 +11,12 @@
 extern crate enum_dispatch;
 
 // Internal modules
+pub mod align;
 pub mod bbox;
 pub mod data;
 pub mod error;
 pub mod geom;
+pub mod translate;
 
 // Re-exports
 #[doc(inline)]

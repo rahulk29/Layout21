@@ -13,6 +13,8 @@ use std::hash::Hash;
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SlotMap};
 
+use crate::align::AlignRect;
+use crate::translate::Translate;
 use crate::Rect;
 // Local Imports
 use crate::{
@@ -133,19 +135,8 @@ pub struct Instance {
     pub angle: Option<f64>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum AlignMode {
-    Left,
-    Right,
-    CenterHorizontal,
-    CenterVertical,
-    ToTheRight,
-    ToTheLeft,
-    Beneath,
-}
-
-impl Instance {
-    pub fn bbox(&self) -> BoundBox {
+impl BoundBoxTrait for Instance {
+    fn bbox(&self) -> BoundBox {
         let inner = {
             let cell = self.cell.read().unwrap();
             cell.layout.as_ref().unwrap().bbox()
@@ -168,72 +159,40 @@ impl Instance {
 
         BoundBox { p0: r.p0, p1: r.p1 }
     }
+}
 
-    pub fn align(&mut self, other: &Self, mode: AlignMode, spacing: Int) -> &mut Self {
-        let sbox = self.bbox();
-        let obox = other.bbox();
+impl Translate for Instance {
+    fn translate(&mut self, v: Point) {
+        self.loc.translate(v);
+    }
+}
 
-        match mode {
-            AlignMode::Left => {
-                self.loc.x += obox.p0.x - sbox.p0.x + spacing;
-            }
-            AlignMode::Right => {
-                self.loc.x += obox.p1.x - sbox.p1.x + spacing;
-            }
-            AlignMode::ToTheRight => {
-                self.loc.x += obox.p1.x - sbox.p0.x + spacing;
-            }
-            AlignMode::ToTheLeft => {
-                self.loc.x += obox.p0.x - sbox.p1.x - spacing;
-            }
-            AlignMode::CenterHorizontal => {
-                self.loc.x += ((obox.p0.x + obox.p1.x) - (sbox.p0.x + sbox.p1.x)) / 2 + spacing;
-            }
-            AlignMode::CenterVertical => {
-                self.loc.y += ((obox.p0.y + obox.p1.y) - (sbox.p0.y + sbox.p1.y)) / 2 + spacing;
-            }
-            AlignMode::Beneath => {
-                println!("{} {} {}", obox.p0.y, sbox.p1.y, spacing);
-                self.loc.y += obox.p0.y - sbox.p1.y - spacing;
-            }
-        }
+impl AlignRect for Instance {}
 
-        self
+impl Instance {
+    fn _transform(&self) -> Transform {
+        Transform::from_instance(&self.loc, self.reflect_vert, self.angle)
     }
 
-    #[inline]
-    pub fn align_left_to_right(&mut self, other: &Self) -> &mut Self {
-        self.align(other, AlignMode::ToTheRight, 0)
+    pub fn port(&self, net: impl Into<String>) -> AbstractPort {
+        let net = net.into();
+        let cell = self.cell.read().unwrap();
+        let port = cell
+            .abs
+            .as_ref()
+            .unwrap()
+            .ports
+            .iter()
+            .find(|p| p.net == net)
+            .unwrap();
+        port.transform(&self._transform())
     }
 
-    pub fn align_top_to_bottom(&mut self, other: &Self) -> &mut Self {
-        let sbox = self.bbox();
-        let obox = other.bbox();
-
-        self.loc.y += obox.p0.y - sbox.p1.y;
-        self
-    }
-
-    pub fn align_bottoms(&mut self, other: &Self) -> &mut Self {
-        let sbox = self.bbox();
-        let obox = other.bbox();
-
-        self.loc.y += obox.p0.y - sbox.p0.y;
-        self
-    }
-
-    #[inline]
-    pub fn align_lefts(&mut self, other: &Self) -> &mut Self {
-        self.align(other, AlignMode::Left, 0)
-    }
-
-    pub fn reflect_vert_anchored(&mut self) -> &mut Self {
-        let box0 = self.bbox();
-        self.reflect_vert = !self.reflect_vert;
-
-        let box1 = self.bbox();
-        self.loc.y += box0.p0.y - box1.p0.y;
-        self
+    pub fn ports(&self) -> Vec<AbstractPort> {
+        let cell = self.cell.read().unwrap();
+        let ports = &cell.abs.as_ref().unwrap().ports;
+        let xform = self._transform();
+        ports.iter().map(|p| p.transform(&xform)).collect()
     }
 
     pub fn reflect_horiz_anchored(&mut self) -> &mut Self {

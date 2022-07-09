@@ -83,6 +83,14 @@ impl BoundBox {
     }
 }
 
+impl From<Rect> for BoundBox {
+    fn from(r: Rect) -> Self {
+        debug_assert!(r.p0.x <= r.p1.x);
+        debug_assert!(r.p0.y <= r.p1.y);
+        Self { p0: r.p0, p1: r.p1 }
+    }
+}
+
 ///
 /// # Bounding Box Trait
 ///

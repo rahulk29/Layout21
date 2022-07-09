@@ -6,13 +6,13 @@
 //!
 
 // Std-Lib
-use std::convert::TryFrom;
+use std::{collections::HashMap, convert::TryFrom};
 
 // Crates.io
 use serde::{Deserialize, Serialize};
 
 // Local imports
-use crate::{bbox::BoundBoxTrait, Int};
+use crate::{bbox::BoundBoxTrait, AbstractPort, BoundBox, Int};
 
 /// # Point in two-dimensional layout-space
 #[derive(Debug, Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -67,6 +67,35 @@ impl Point {
         }
     }
 }
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub struct Span {
+    start: Int,
+    stop: Int,
+}
+
+impl Span {
+    fn new(start: Int, stop: Int) -> Self {
+        assert!(start <= stop);
+        Self { start, stop }
+    }
+
+    #[inline]
+    pub fn center(&self) -> Int {
+        (self.start + self.stop) / 2
+    }
+
+    #[inline]
+    pub fn intersects(&self, other: &Self) -> bool {
+        !(other.stop < self.start || self.stop < other.start)
+    }
+
+    #[inline]
+    pub fn length(&self) -> Int {
+        self.stop - self.start
+    }
+}
+
 /// Direction Enumeration
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum Dir {
@@ -125,6 +154,22 @@ impl Rect {
     /// Calculate our center-point
     pub fn center(&self) -> Point {
         Point::new((self.p0.x + self.p1.x) / 2, (self.p0.y + self.p1.y) / 2)
+    }
+
+    pub fn hspan(&self) -> Span {
+        Span::new(self.p0.x, self.p1.x)
+    }
+
+    pub fn vspan(&self) -> Span {
+        Span::new(self.p0.y, self.p1.y)
+    }
+}
+
+impl From<BoundBox> for Rect {
+    fn from(r: BoundBox) -> Self {
+        debug_assert!(r.p0.x <= r.p1.x);
+        debug_assert!(r.p0.y <= r.p1.y);
+        Self { p0: r.p0, p1: r.p1 }
     }
 }
 
@@ -486,6 +531,25 @@ impl TransformTrait for Path {
         Path {
             points: self.points.iter().map(|p| p.transform(trans)).collect(),
             width: self.width,
+        }
+    }
+}
+impl TransformTrait for AbstractPort {
+    /// Apply matrix-vector [Tranform] `trans`.
+    /// Creates a new shape at a location equal to the transformation of our own.
+    fn transform(&self, trans: &Transform) -> Self {
+        let shapes = self
+            .shapes
+            .iter()
+            .map(|(k, v)| {
+                let v = v.iter().map(|s| s.transform(trans)).collect::<Vec<_>>();
+                (k.clone(), v)
+            })
+            .collect::<HashMap<_, _>>();
+
+        Self {
+            net: self.net.clone(),
+            shapes,
         }
     }
 }
