@@ -131,6 +131,12 @@ impl BoundBoxTrait for BoundBox {
         BoundBox::new(pmin, pmax)
     }
     fn union(&self, bbox: &BoundBox) -> BoundBox {
+        if bbox.is_empty() {
+            return *self;
+        }
+        if self.is_empty() {
+            return *bbox;
+        }
         // Take the minimum and maximum of the two bounding boxes
         BoundBox::new(
             Point::new(self.p0.x.min(bbox.p0.x), self.p0.y.min(bbox.p0.y)),

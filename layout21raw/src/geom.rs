@@ -6,7 +6,7 @@
 //!
 
 // Std-Lib
-use std::{collections::HashMap, convert::TryFrom};
+use std::{collections::HashMap, convert::TryFrom, fmt::Display};
 
 // Crates.io
 use serde::{Deserialize, Serialize};
@@ -74,10 +74,43 @@ pub struct Span {
     stop: Int,
 }
 
+/// Snaps `pos` to the nearest multiple of `grid`.
+pub fn snap_to_grid(pos: Int, grid: Int) -> Int {
+    debug_assert!(grid > 0);
+
+    let rem = pos.rem_euclid(grid);
+    debug_assert!(rem >= 0);
+    debug_assert!(rem < grid);
+    if rem <= grid / 2 {
+        pos - rem
+    } else {
+        pos + grid - rem
+    }
+}
+
 impl Span {
-    fn new(start: Int, stop: Int) -> Self {
-        assert!(start <= stop);
+    pub fn new(_start: Int, _stop: Int) -> Self {
+        use std::cmp::{max, min};
+        let start = min(_start, _stop);
+        let stop = max(_start, _stop);
         Self { start, stop }
+    }
+
+    pub fn from_center_span(center: Int, span: Int) -> Self {
+        assert!(span >= 0);
+        assert_eq!(span % 2, 0);
+
+        Self::new(center - (span / 2), center + (span / 2))
+    }
+
+    pub fn from_center_span_gridded(center: Int, span: Int, grid: Int) -> Self {
+        debug_assert!(span >= 0);
+        assert_eq!(span % 2, 0);
+        assert_eq!(span % grid, 0);
+
+        let start = snap_to_grid(center - (span / 2), grid);
+
+        Self::new(start, start + span)
     }
 
     #[inline]
@@ -94,14 +127,27 @@ impl Span {
     pub fn length(&self) -> Int {
         self.stop - self.start
     }
+
+    #[inline]
+    pub fn start(&self) -> Int {
+        self.start
+    }
+
+    #[inline]
+    pub fn stop(&self) -> Int {
+        self.stop
+    }
 }
 
 /// Direction Enumeration
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub enum Dir {
+    /// Horizontal.
     Horiz,
+    /// Vertical.
     Vert,
 }
+
 impl Dir {
     /// Whichever direction we are, return the other one.
     pub fn other(self) -> Self {
@@ -110,7 +156,30 @@ impl Dir {
             Self::Vert => Self::Horiz,
         }
     }
+    pub fn short_form(&self) -> &'static str {
+        match *self {
+            Self::Horiz => "h",
+            Self::Vert => "v",
+        }
+    }
 }
+
+impl Default for Dir {
+    #[inline]
+    fn default() -> Self {
+        Self::Horiz
+    }
+}
+
+impl Display for Dir {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            Self::Horiz => write!(f, "horizontal"),
+            Self::Vert => write!(f, "vertical"),
+        }
+    }
+}
+
 impl std::ops::Not for Dir {
     type Output = Self;
     /// Exclamation Operator returns the opposite direction
@@ -156,12 +225,35 @@ impl Rect {
         Point::new((self.p0.x + self.p1.x) / 2, (self.p0.y + self.p1.y) / 2)
     }
 
+    pub fn new(p0: Point, p1: Point) -> Self {
+        Self { p0, p1 }
+    }
+
+    pub fn from_spans(h: Span, v: Span) -> Self {
+        Self {
+            p0: Point::new(h.start(), v.start()),
+            p1: Point::new(h.stop(), v.stop()),
+        }
+    }
+
     pub fn hspan(&self) -> Span {
         Span::new(self.p0.x, self.p1.x)
     }
 
     pub fn vspan(&self) -> Span {
         Span::new(self.p0.y, self.p1.y)
+    }
+
+    pub fn longer_dir(&self) -> Dir {
+        if self.hspan().length() > self.vspan().length() {
+            Dir::Horiz
+        } else {
+            Dir::Vert
+        }
+    }
+
+    pub fn shorter_dir(&self) -> Dir {
+        !self.longer_dir()
     }
 }
 

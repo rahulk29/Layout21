@@ -1,4 +1,4 @@
-use crate::{translate::Translate, BoundBox, BoundBoxTrait, Int, Point};
+use crate::{snap_to_grid, translate::Translate, BoundBox, BoundBoxTrait, Int, Point};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -113,14 +113,8 @@ pub trait AlignRect: Translate + BoundBoxTrait {
         // Then snap to the nearest grid location
         let bbox = self.bbox();
         assert_eq!(bbox.width() % grid, 0);
-        let rem = bbox.p0.x.rem_euclid(grid);
-        assert!(rem >= 0);
-        assert!(rem < grid);
-        if rem <= grid / 2 {
-            self.translate(Point::new(-rem, 0));
-        } else {
-            self.translate(Point::new(grid - rem, 0));
-        }
+        let offset = snap_to_grid(bbox.p0.x, grid) - bbox.p0.x;
+        self.translate(Point::new(offset, 0));
     }
 
     fn align_centers_vertically_gridded(&mut self, other: BoundBox, grid: Int) {
@@ -130,14 +124,8 @@ pub trait AlignRect: Translate + BoundBoxTrait {
         // Then snap to the nearest grid location
         let bbox = self.bbox();
         assert_eq!(bbox.height() % grid, 0);
-        let rem = bbox.p0.y.rem_euclid(grid);
-        assert!(rem >= 0);
-        assert!(rem < grid);
-        if rem <= grid / 2 {
-            self.translate(Point::new(0, -rem));
-        } else {
-            self.translate(Point::new(0, grid - rem));
-        }
+        let offset = snap_to_grid(bbox.p0.y, grid) - bbox.p0.y;
+        self.translate(Point::new(0, offset));
     }
 
     fn align_centers_gridded(&mut self, other: BoundBox, grid: Int) {

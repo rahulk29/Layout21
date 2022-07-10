@@ -195,6 +195,19 @@ impl Instance {
         ports.iter().map(|p| p.transform(&xform)).collect()
     }
 
+    pub fn has_abstract(&self) -> bool {
+        let cell = self.cell.read().unwrap();
+        cell.has_abstract()
+    }
+
+    pub fn reflect_vert_anchored(&mut self) -> &mut Self {
+        let box0 = self.bbox();
+        self.reflect_vert = !self.reflect_vert;
+        let box1 = self.bbox();
+        self.loc.y += box0.p0.y - box1.p0.y;
+        self
+    }
+
     pub fn reflect_horiz_anchored(&mut self) -> &mut Self {
         let box0 = self.bbox();
         self.reflect_vert = !self.reflect_vert;
@@ -432,6 +445,18 @@ impl AbstractPort {
         self.net = net.into();
         self
     }
+
+    pub fn bbox(&self, layer: LayerKey) -> Option<BoundBox> {
+        if let Some(shapes) = self.shapes.get(&layer) {
+            let mut bbox = BoundBox::empty();
+            for s in shapes {
+                bbox = s.union(&bbox);
+            }
+            Some(bbox)
+        } else {
+            None
+        }
+    }
 }
 
 /// # Raw Layout Library  
@@ -515,6 +540,11 @@ impl Cell {
             name,
             ..Default::default()
         }
+    }
+
+    #[inline]
+    pub fn has_abstract(&self) -> bool {
+        self.abs.is_some()
     }
 }
 impl From<Abstract> for Cell {
