@@ -236,6 +236,23 @@ impl Rect {
         }
     }
 
+    #[inline]
+    pub fn bottom(&self) -> Int {
+        self.p0.y
+    }
+    #[inline]
+    pub fn top(&self) -> Int {
+        self.p1.y
+    }
+    #[inline]
+    pub fn left(&self) -> Int {
+        self.p0.x
+    }
+    #[inline]
+    pub fn right(&self) -> Int {
+        self.p1.x
+    }
+
     pub fn hspan(&self) -> Span {
         Span::new(self.p0.x, self.p1.x)
     }
@@ -244,8 +261,23 @@ impl Rect {
         Span::new(self.p0.y, self.p1.y)
     }
 
+    #[inline]
+    pub fn width(&self) -> Int {
+        self.hspan().length()
+    }
+
+    #[inline]
+    pub fn area(&self) -> Int {
+        self.width() * self.height()
+    }
+
+    #[inline]
+    pub fn height(&self) -> Int {
+        self.vspan().length()
+    }
+
     pub fn longer_dir(&self) -> Dir {
-        if self.hspan().length() > self.vspan().length() {
+        if self.width() > self.height() {
             Dir::Horiz
         } else {
             Dir::Vert

@@ -457,6 +457,24 @@ impl AbstractPort {
             None
         }
     }
+
+    pub fn largest_rect(&self, layer: LayerKey) -> Option<Rect> {
+        let shapes = self.shapes.get(&layer)?;
+        let mut best = None;
+        let mut best_area = 0;
+        for s in shapes {
+            let r = match s {
+                Shape::Rect(r) => r,
+                _ => continue,
+            };
+            let area = r.area();
+            if area > best_area {
+                best_area = area;
+                best = Some(*r)
+            }
+        }
+        best
+    }
 }
 
 /// # Raw Layout Library  

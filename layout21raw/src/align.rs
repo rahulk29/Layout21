@@ -129,7 +129,7 @@ pub trait AlignRect: Translate + BoundBoxTrait {
     }
 
     fn align_centers_gridded(&mut self, other: BoundBox, grid: Int) {
-        self.align_centers_vertically_gridded(other, grid);
+        self.align_centers_horizontally_gridded(other, grid);
         self.align_centers_vertically_gridded(other, grid);
     }
 }
