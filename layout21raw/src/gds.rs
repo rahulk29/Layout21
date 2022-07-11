@@ -579,14 +579,20 @@ impl GdsImporter {
     /// Import a GDS Cell ([gds21::GdsStruct]) into a [Cell]
     fn import_cell(&mut self, strukt: &gds21::GdsStruct) -> LayoutResult<Cell> {
         self.ctx.push(ErrorContext::Cell(strukt.name.clone()));
-        let cell = self.import_layout(strukt)?.into();
+        let (layout, abs) = self.import_layout(strukt)?;
+        let cell = Cell {
+            name: layout.name.clone(),
+            layout: Some(layout),
+            abs: Some(abs),
+        };
         self.ctx.pop();
         Ok(cell)
     }
     /// Import a GDS Cell ([gds21::GdsStruct]) into a [Layout]
-    fn import_layout(&mut self, strukt: &gds21::GdsStruct) -> LayoutResult<Layout> {
+    fn import_layout(&mut self, strukt: &gds21::GdsStruct) -> LayoutResult<(Layout, Abstract)> {
         let mut layout = Layout::default();
         let name = strukt.name.clone();
+        let mut abs = Abstract::new(&name);
         layout.name = name.clone();
         self.ctx.push(ErrorContext::Impl);
 
@@ -637,13 +643,28 @@ impl GdsImporter {
         // Text elements which do not overlap a geometric element on the same layer
         // are converted to annotations.
         for textelem in &texts {
+            let mut port = AbstractPort::new(&textelem.string.to_lowercase());
             let loc = self.import_point(&textelem.xy)?;
             if let Some(layer) = layers.get(&textelem.layer) {
+                let layer_map = Ptr::clone(&self.layers);
+                let layer_map = layer_map.read().unwrap();
+                let draw_key = layer_map.get_new_purpose(
+                    textelem.layer,
+                    textelem.texttype,
+                    LayerPurpose::Drawing,
+                );
+                if draw_key.is_none() {
+                    println!(
+                        "No drawing layer found for GDS layer ({}, {}).",
+                        textelem.layer, textelem.texttype
+                    );
+                }
                 // Layer exists in geometry; see which elements intersect with this text
                 let mut hit = false;
                 for ekey in layer.iter() {
                     let elem = elems.get_mut(*ekey).unwrap();
-                    if elem.inner.contains(&loc) {
+                    if elem.inner.contains(&loc) && Some(elem.layer) == draw_key {
+                        let layer_key = draw_key.unwrap();
                         // Label lands inside this element.
                         // Check whether we have an existing label.
                         // If so, it better be the same net name!
@@ -655,10 +676,11 @@ impl GdsImporter {
                         if let Some(pname) = &elem.net {
                             if *pname != lower_case_name {
                                 println!(
-                                    "Warning: GDSII labels shorting nets {} and {} on layer {}",
+                                    "Warning: GDSII labels shorting nets {} and {} on layer {} in cell {}",
                                     pname,
                                     textelem.string.clone(),
-                                    textelem.layer
+                                    textelem.layer,
+                                    &name,
                                 );
                                 // return self.fail(format!(
                                 //     "GDSII labels shorting nets {} and {} on layer {}",
@@ -669,12 +691,14 @@ impl GdsImporter {
                             }
                         } else {
                             elem.net = Some(lower_case_name);
+                            port.add_shape(layer_key, elem.inner.clone());
                         }
                         hit = true;
                     }
                 }
                 // If we've hit at least one, carry onto the next TextElement
                 if hit {
+                    abs.add_port(port);
                     continue;
                 }
             }
@@ -687,7 +711,7 @@ impl GdsImporter {
         // Pull the elements out of the local slot-map, into the vector that [Layout] wants
         layout.elems = elems.drain().map(|(_k, v)| v).collect();
         self.ctx.pop();
-        Ok(layout)
+        Ok((layout, abs))
     }
     /// Import a [gds21::GdsBoundary] into an [Element]
     fn import_boundary(&mut self, x: &gds21::GdsBoundary) -> LayoutResult<Element> {

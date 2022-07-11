@@ -280,6 +280,18 @@ impl Layers {
         &self.slots
     }
 
+    pub fn get_new_purpose(&self, num: i16, purpose: i16, to: LayerPurpose) -> Option<LayerKey> {
+        let lay = self.get_layer_from_spec(num, purpose)?;
+        let purpose = lay.num(&to)?;
+        let (key, _) = self.get_from_spec(num, purpose)?;
+        Some(key)
+    }
+
+    pub fn get_layer_from_spec(&self, num: i16, purpose: i16) -> Option<&Layer> {
+        let (key, _) = self.get_from_spec(num, purpose)?;
+        self.get(key)
+    }
+
     pub fn get_from_spec(&self, num: i16, purpose: i16) -> Option<(LayerKey, LayerPurpose)> {
         for (k, layer) in self.slots().iter() {
             if layer.layernum != num {
