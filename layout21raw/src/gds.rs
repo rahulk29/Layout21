@@ -638,12 +638,14 @@ impl GdsImporter {
                 }
             }
         }
+        let mut ports = HashMap::new();
         // Pass two: sort out whether each [gds21::GdsTextElem] is a net-label,
         // And if so, assign it as a net-name on each intersecting [Element].
         // Text elements which do not overlap a geometric element on the same layer
         // are converted to annotations.
         for textelem in &texts {
-            let mut port = AbstractPort::new(&textelem.string.to_lowercase());
+            let net_name = textelem.string.to_lowercase().to_string();
+            let port = ports.entry(net_name.clone()).or_insert(AbstractPort::new(&net_name));
             let loc = self.import_point(&textelem.xy)?;
             if let Some(layer) = layers.get(&textelem.layer) {
                 let layer_map = Ptr::clone(&self.layers);
@@ -698,7 +700,6 @@ impl GdsImporter {
                 }
                 // If we've hit at least one, carry onto the next TextElement
                 if hit {
-                    abs.add_port(port);
                     continue;
                 }
             }
@@ -707,6 +708,10 @@ impl GdsImporter {
                 string: textelem.string.clone(),
                 loc,
             });
+        }
+
+        for (_, port) in ports.into_iter() {
+            abs.add_port(port);
         }
         // Pull the elements out of the local slot-map, into the vector that [Layout] wants
         layout.elems = elems.drain().map(|(_k, v)| v).collect();

@@ -68,7 +68,7 @@ impl Point {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Hash, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Span {
     start: Int,
     stop: Int,
@@ -271,6 +271,26 @@ impl Rect {
         self.width() * self.height()
     }
 
+    pub fn lower_edge(&self, dir: Dir) -> Int {
+        self.span(dir).start()
+    }
+
+    pub fn upper_edge(&self, dir: Dir) -> Int {
+        self.span(dir).stop()
+    }
+
+    pub fn span(&self, dir: Dir) -> Span {
+        match dir {
+            Dir::Horiz => self.hspan(),
+            Dir::Vert => self.vspan(),
+        }
+    }
+
+    #[inline]
+    pub fn span_builder() -> RectSpanBuilder {
+        RectSpanBuilder::new()
+    }
+
     #[inline]
     pub fn height(&self) -> Int {
         self.vspan().length()
@@ -286,6 +306,33 @@ impl Rect {
 
     pub fn shorter_dir(&self) -> Dir {
         !self.longer_dir()
+    }
+}
+
+/// A helper struct for building [`Rect`]s from [`Span`]s.
+#[derive(Clone, Default, Eq, PartialEq, Hash, Serialize, Deserialize)]
+pub struct RectSpanBuilder {
+    hspan: Option<Span>,
+    vspan: Option<Span>,
+}
+
+impl RectSpanBuilder {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    pub fn with(&mut self, dir: Dir, span: Span) -> &mut Self {
+        match dir {
+            Dir::Horiz => self.hspan = Some(span),
+            Dir::Vert => self.vspan = Some(span),
+        }
+        self
+    }
+
+    /// Builds a Rect from the specified spans. Panics if one or more directions
+    /// were left unspecified.
+    pub fn build(&self) -> Rect {
+        Rect::from_spans(self.hspan.unwrap(), self.vspan.unwrap())
     }
 }
 
