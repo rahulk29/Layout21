@@ -645,7 +645,9 @@ impl GdsImporter {
         // are converted to annotations.
         for textelem in &texts {
             let net_name = textelem.string.to_lowercase().to_string();
-            let port = ports.entry(net_name.clone()).or_insert(AbstractPort::new(&net_name));
+            let port = ports
+                .entry(net_name.clone())
+                .or_insert(AbstractPort::new(&net_name));
             let loc = self.import_point(&textelem.xy)?;
             if let Some(layer) = layers.get(&textelem.layer) {
                 let layer_map = Ptr::clone(&self.layers);

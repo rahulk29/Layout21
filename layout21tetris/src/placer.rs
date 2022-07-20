@@ -421,7 +421,7 @@ impl Placer {
                     if inst.reflected(!dir) {
                         period_tracks - track - 1
                     } else {
-                        period_tracks + track 
+                        period_tracks + track
                     }
                 };
 

@@ -12,7 +12,7 @@ use std::{collections::HashMap, convert::TryFrom, fmt::Display};
 use serde::{Deserialize, Serialize};
 
 // Local imports
-use crate::{bbox::BoundBoxTrait, AbstractPort, BoundBox, Int};
+use crate::{align::AlignRect, bbox::BoundBoxTrait, AbstractPort, BoundBox, Int};
 
 /// # Point in two-dimensional layout-space
 #[derive(Debug, Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -76,11 +76,11 @@ pub struct Span {
 
 /// Snaps `pos` to the nearest multiple of `grid`.
 pub fn snap_to_grid(pos: Int, grid: Int) -> Int {
-    debug_assert!(grid > 0);
+    assert!(grid > 0);
 
     let rem = pos.rem_euclid(grid);
-    debug_assert!(rem >= 0);
-    debug_assert!(rem < grid);
+    assert!(rem >= 0);
+    assert!(rem < grid);
     if rem <= grid / 2 {
         pos - rem
     } else {
@@ -89,11 +89,22 @@ pub fn snap_to_grid(pos: Int, grid: Int) -> Int {
 }
 
 impl Span {
-    pub fn new(_start: Int, _stop: Int) -> Self {
+    pub fn new(start: Int, stop: Int) -> Self {
         use std::cmp::{max, min};
-        let start = min(_start, _stop);
-        let stop = max(_start, _stop);
-        Self { start, stop }
+        let lower = min(start, stop);
+        let upper = max(start, stop);
+        Self {
+            start: lower,
+            stop: upper,
+        }
+    }
+
+    pub fn edge(&self, pos: bool) -> Int {
+        if pos {
+            self.stop
+        } else {
+            self.start
+        }
     }
 
     pub fn from_center_span(center: Int, span: Int) -> Self {
@@ -104,7 +115,7 @@ impl Span {
     }
 
     pub fn from_center_span_gridded(center: Int, span: Int, grid: Int) -> Self {
-        debug_assert!(span >= 0);
+        assert!(span >= 0);
         assert_eq!(span % 2, 0);
         assert_eq!(span % grid, 0);
 
@@ -136,6 +147,20 @@ impl Span {
     #[inline]
     pub fn stop(&self) -> Int {
         self.stop
+    }
+}
+
+impl From<(Int, Int)> for Span {
+    #[inline]
+    fn from(tup: (Int, Int)) -> Self {
+        Self::new(tup.0, tup.1)
+    }
+}
+
+impl From<Span> for (Int, Int) {
+    #[inline]
+    fn from(s: Span) -> Self {
+        (s.start(), s.stop())
     }
 }
 
@@ -286,6 +311,38 @@ impl Rect {
         }
     }
 
+    fn sorted_edges(&self, other: &Self, dir: Dir) -> [Int; 4] {
+        let mut edges = [
+            self.lower_edge(dir),
+            self.upper_edge(dir),
+            other.lower_edge(dir),
+            other.upper_edge(dir),
+        ];
+        edges.sort();
+        edges
+    }
+
+    #[inline]
+    pub fn inner_span(&self, other: &Self, dir: Dir) -> Span {
+        let edges = self.sorted_edges(other, dir);
+        Span::new(edges[1], edges[2])
+    }
+
+    #[inline]
+    pub fn outer_span(&self, other: &Self, dir: Dir) -> Span {
+        let edges = self.sorted_edges(other, dir);
+        Span::new(edges[0], edges[3])
+    }
+
+    pub fn edge_closer_to(&self, x: Int, dir: Dir) -> Int {
+        let (x0, x1) = self.span(dir).into();
+        if (x - x0).abs() <= (x - x1).abs() {
+            x0
+        } else {
+            x1
+        }
+    }
+
     #[inline]
     pub fn span_builder() -> RectSpanBuilder {
         RectSpanBuilder::new()
@@ -308,6 +365,8 @@ impl Rect {
         !self.longer_dir()
     }
 }
+
+impl AlignRect for Rect {}
 
 /// A helper struct for building [`Rect`]s from [`Span`]s.
 #[derive(Clone, Default, Eq, PartialEq, Hash, Serialize, Deserialize)]
