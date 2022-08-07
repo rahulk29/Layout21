@@ -170,6 +170,11 @@ impl Translate for Instance {
 impl AlignRect for Instance {}
 
 impl Instance {
+    #[inline]
+    pub fn transform(&self) -> Transform {
+        self._transform()
+    }
+
     fn _transform(&self) -> Transform {
         Transform::from_instance(&self.loc, self.reflect_vert, self.angle)
     }

@@ -343,6 +343,15 @@ impl Rect {
         }
     }
 
+    pub fn edge_farther_from(&self, x: Int, dir: Dir) -> Int {
+        let (x0, x1) = self.span(dir).into();
+        if (x - x0).abs() <= (x - x1).abs() {
+            x1
+        } else {
+            x0
+        }
+    }
+
     #[inline]
     pub fn span_builder() -> RectSpanBuilder {
         RectSpanBuilder::new()
