@@ -170,6 +170,19 @@ impl Translate for Instance {
 impl AlignRect for Instance {}
 
 impl Instance {
+    pub fn new<N, C>(name: N, cell: C) -> Self 
+        where N: Into<String>,
+              C: Into<Ptr<Cell>>
+    {
+        Self {
+            cell: cell.into(),
+            inst_name: name.into(),
+            loc: Point::new(0, 0),
+            reflect_vert: false,
+            angle: None,
+        }
+    }
+
     #[inline]
     pub fn transform(&self) -> Transform {
         self._transform()
@@ -466,6 +479,14 @@ impl AbstractPort {
     pub fn set_net(&mut self, net: impl Into<String>) -> &mut Self {
         self.net = net.into();
         self
+    }
+
+    /// Adds the shapes of `other` to this [`AbstractPort`].
+    pub fn merge(&mut self, other: Self) {
+        for (k, mut v) in other.shapes.into_iter() {
+            let shapes = self.shapes.entry(k).or_insert(Vec::new());
+            shapes.append(&mut v);
+        }
     }
 
     pub fn bbox(&self, layer: LayerKey) -> Option<BoundBox> {
