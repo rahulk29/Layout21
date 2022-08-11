@@ -81,6 +81,11 @@ impl BoundBox {
     pub fn center(&self) -> Point {
         Point::new((self.p0.x + self.p1.x) / 2, (self.p0.y + self.p1.y) / 2)
     }
+
+    #[inline]
+    pub fn into_rect(self) -> Rect {
+        Rect::from(self)
+    }
 }
 
 impl From<Rect> for BoundBox {

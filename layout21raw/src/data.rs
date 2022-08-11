@@ -433,7 +433,12 @@ impl Abstract {
         self.ports.push(port);
         self
     }
+
+    pub fn set_name(&mut self, name: impl Into<String>) {
+        self.name = name.into();
+    }
 }
+
 /// # Port Element for [Abstract]s
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct AbstractPort {
@@ -618,6 +623,13 @@ pub struct Layout {
     pub annotations: Vec<TextElement>,
 }
 impl Layout {
+    pub fn new(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            ..Default::default()
+        }
+    }
+
     /// Create a rectangular [BoundBox] surrounding all elements in the [Layout].
     pub fn bbox(&self) -> BoundBox {
         let mut bbox = BoundBox::empty();
@@ -633,6 +645,15 @@ impl Layout {
         }
         bbox
     }
+
+    pub fn add_inst<T>(&mut self, inst: T) where T: Into<Instance> {
+        self.insts.push(inst.into());
+    }
+
+    pub fn add<T>(&mut self, elem: T) where T: Into<Element> {
+        self.elems.push(elem.into());
+    }
+
     /// Flatten a [Layout], particularly its hierarchical instances, to a vector of [Element]s
     pub fn flatten(&self) -> LayoutResult<Vec<Element>> {
         // Kick off recursive calls, with the identity-transform applied for the top-level `layout`
