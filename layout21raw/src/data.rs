@@ -170,9 +170,10 @@ impl Translate for Instance {
 impl AlignRect for Instance {}
 
 impl Instance {
-    pub fn new<N, C>(name: N, cell: C) -> Self 
-        where N: Into<String>,
-              C: Into<Ptr<Cell>>
+    pub fn new<N, C>(name: N, cell: C) -> Self
+    where
+        N: Into<String>,
+        C: Into<Ptr<Cell>>,
     {
         Self {
             cell: cell.into(),
@@ -667,11 +668,17 @@ impl Layout {
         bbox
     }
 
-    pub fn add_inst<T>(&mut self, inst: T) where T: Into<Instance> {
+    pub fn add_inst<T>(&mut self, inst: T)
+    where
+        T: Into<Instance>,
+    {
         self.insts.push(inst.into());
     }
 
-    pub fn add<T>(&mut self, elem: T) where T: Into<Element> {
+    pub fn add<T>(&mut self, elem: T)
+    where
+        T: Into<Element>,
+    {
         self.elems.push(elem.into());
     }
 
