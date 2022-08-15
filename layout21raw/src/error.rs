@@ -25,7 +25,7 @@ pub enum LayoutError {
     /// Conversion Errors, with Boxed External Error
     Conversion {
         message: String,
-        err: Box<dyn std::error::Error>,
+        err: Box<dyn std::error::Error + Send + Sync>,
         stack: Vec<ErrorContext>,
     },
     /// Boxed External Errors
