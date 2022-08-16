@@ -322,6 +322,10 @@ impl Layers {
         }
         None
     }
+
+    pub fn get_layer_names(&self) -> Vec<&String> {
+        self.names.keys().collect()
+    }
 }
 /// Layer-Purpose Enumeration
 /// Includes the common use-cases for each shape,
