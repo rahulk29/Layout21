@@ -419,6 +419,10 @@ impl Layer {
     pub fn num(&self, purpose: &LayerPurpose) -> Option<i16> {
         self.nums.get(purpose).copied()
     }
+    /// Retrieve a list of purpose number-[LayerPurpose] tuples
+    pub fn get_purps(&self) -> Vec<(&i16, &LayerPurpose)> {
+        self.purps.iter().collect()
+    }
 }
 
 /// Raw Abstract-Layout
