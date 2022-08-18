@@ -9,6 +9,7 @@
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 
+use gds21::GdsLayerSpec;
 // Crates.io
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SlotMap};
@@ -176,26 +177,26 @@ impl Instance {
         match mode {
             AlignMode::Left => {
                 self.loc.x += obox.p0.x - sbox.p0.x + spacing;
-            },
+            }
             AlignMode::Right => {
                 self.loc.x += obox.p1.x - sbox.p1.x + spacing;
-            },
+            }
             AlignMode::ToTheRight => {
                 self.loc.x += obox.p1.x - sbox.p0.x + spacing;
-            },
+            }
             AlignMode::ToTheLeft => {
                 self.loc.x += obox.p0.x - sbox.p1.x - spacing;
-            },
+            }
             AlignMode::CenterHorizontal => {
-                self.loc.x += ((obox.p0.x + obox.p1.x) - (sbox.p0.x + sbox.p1.x))/2 + spacing;
+                self.loc.x += ((obox.p0.x + obox.p1.x) - (sbox.p0.x + sbox.p1.x)) / 2 + spacing;
             }
             AlignMode::CenterVertical => {
-                self.loc.y += ((obox.p0.y + obox.p1.y) - (sbox.p0.y + sbox.p1.y))/2 + spacing;
+                self.loc.y += ((obox.p0.y + obox.p1.y) - (sbox.p0.y + sbox.p1.y)) / 2 + spacing;
             }
             AlignMode::Beneath => {
                 println!("{} {} {}", obox.p0.y, sbox.p1.y, spacing);
                 self.loc.y += obox.p0.y - sbox.p1.y - spacing;
-            },
+            }
         }
 
         self
@@ -308,18 +309,19 @@ impl Layers {
         &self.slots
     }
 
-    pub fn get_from_spec(&self, num: i16, purpose: i16) -> Option<(LayerKey, LayerPurpose)> {
+    pub fn get_from_spec(&self, spec: LayerSpec) -> Option<(LayerKey, LayerPurpose)> {
         for (k, layer) in self.slots().iter() {
-            if layer.layernum != num {
+            if layer.layernum != spec.0 {
                 continue;
             }
-            if let Some(purpose) = layer.purpose(purpose) {
+            if let Some(purpose) = layer.purpose(spec.1) {
                 return Some((k, purpose.clone()));
             }
         }
         None
     }
 }
+
 /// Layer-Purpose Enumeration
 /// Includes the common use-cases for each shape,
 /// and two "escape hatches", one named and one not.
@@ -343,6 +345,11 @@ pub struct LayerSpec(i16, i16);
 impl LayerSpec {
     pub fn new(n1: i16, n2: i16) -> Self {
         Self(n1, n2)
+    }
+}
+impl From<GdsLayerSpec> for LayerSpec {
+    fn from(other: GdsLayerSpec) -> Self {
+        Self(other.layer, other.xtype)
     }
 }
 /// # Per-Layer Datatype Specification

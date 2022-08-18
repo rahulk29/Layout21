@@ -922,7 +922,7 @@ impl GdsImporter {
         let spec = elem.layerspec();
         let layers = self.layers.write()?;
         layers
-            .get_from_spec(spec.layer, spec.xtype)
+            .get_from_spec(spec.into())
             .ok_or(LayoutError::msg("Layer Not Found"))
     }
 }

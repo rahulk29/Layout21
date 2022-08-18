@@ -142,7 +142,7 @@ pub enum Shape {
 }
 impl Shape {
     /// Boolean indication of whether we intersect with [Shape] `other`.
-    pub fn intersects(&self, other: &Shape) -> bool {
+    pub fn intersects(&self, _other: &Shape) -> bool {
         todo!() // FIXME!
     }
 }

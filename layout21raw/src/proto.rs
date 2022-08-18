@@ -13,6 +13,7 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
+use crate::LayerSpec;
 // Local imports
 use crate::{
     utils::{ErrorContext, ErrorHelper, Ptr},
@@ -611,7 +612,7 @@ impl ProtoImporter {
         let purpose = i16::try_from(player.purpose)?;
         let layers = self.layers.write()?;
         layers
-            .get_from_spec(num, purpose)
+            .get_from_spec(LayerSpec::new(num, purpose))
             .ok_or(LayoutError::msg("Layer Not Found"))
     }
 }
