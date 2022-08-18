@@ -14,6 +14,8 @@ use gds21::GdsLayerSpec;
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SlotMap};
 
+use crate::align::AlignRect;
+use crate::translate::Translate;
 use crate::Rect;
 // Local Imports
 use crate::{
@@ -134,19 +136,8 @@ pub struct Instance {
     pub angle: Option<f64>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum AlignMode {
-    Left,
-    Right,
-    CenterHorizontal,
-    CenterVertical,
-    ToTheRight,
-    ToTheLeft,
-    Beneath,
-}
-
-impl Instance {
-    pub fn bbox(&self) -> BoundBox {
+impl BoundBoxTrait for Instance {
+    fn bbox(&self) -> BoundBox {
         let inner = {
             let cell = self.cell.read().unwrap();
             cell.layout.as_ref().unwrap().bbox()
@@ -169,69 +160,69 @@ impl Instance {
 
         BoundBox { p0: r.p0, p1: r.p1 }
     }
+}
 
-    pub fn align(&mut self, other: &Self, mode: AlignMode, spacing: Int) -> &mut Self {
-        let sbox = self.bbox();
-        let obox = other.bbox();
+impl Translate for Instance {
+    fn translate(&mut self, v: Point) {
+        self.loc.translate(v);
+    }
+}
 
-        match mode {
-            AlignMode::Left => {
-                self.loc.x += obox.p0.x - sbox.p0.x + spacing;
-            }
-            AlignMode::Right => {
-                self.loc.x += obox.p1.x - sbox.p1.x + spacing;
-            }
-            AlignMode::ToTheRight => {
-                self.loc.x += obox.p1.x - sbox.p0.x + spacing;
-            }
-            AlignMode::ToTheLeft => {
-                self.loc.x += obox.p0.x - sbox.p1.x - spacing;
-            }
-            AlignMode::CenterHorizontal => {
-                self.loc.x += ((obox.p0.x + obox.p1.x) - (sbox.p0.x + sbox.p1.x)) / 2 + spacing;
-            }
-            AlignMode::CenterVertical => {
-                self.loc.y += ((obox.p0.y + obox.p1.y) - (sbox.p0.y + sbox.p1.y)) / 2 + spacing;
-            }
-            AlignMode::Beneath => {
-                println!("{} {} {}", obox.p0.y, sbox.p1.y, spacing);
-                self.loc.y += obox.p0.y - sbox.p1.y - spacing;
-            }
+impl AlignRect for Instance {}
+
+impl Instance {
+    pub fn new<N, C>(name: N, cell: C) -> Self
+    where
+        N: Into<String>,
+        C: Into<Ptr<Cell>>,
+    {
+        Self {
+            cell: cell.into(),
+            inst_name: name.into(),
+            loc: Point::new(0, 0),
+            reflect_vert: false,
+            angle: None,
         }
-
-        self
     }
 
     #[inline]
-    pub fn align_left_to_right(&mut self, other: &Self) -> &mut Self {
-        self.align(other, AlignMode::ToTheRight, 0)
+    pub fn transform(&self) -> Transform {
+        self._transform()
     }
 
-    pub fn align_top_to_bottom(&mut self, other: &Self) -> &mut Self {
-        let sbox = self.bbox();
-        let obox = other.bbox();
-
-        self.loc.y += obox.p0.y - sbox.p1.y;
-        self
+    fn _transform(&self) -> Transform {
+        Transform::from_instance(&self.loc, self.reflect_vert, self.angle)
     }
 
-    pub fn align_bottoms(&mut self, other: &Self) -> &mut Self {
-        let sbox = self.bbox();
-        let obox = other.bbox();
-
-        self.loc.y += obox.p0.y - sbox.p0.y;
-        self
+    pub fn port(&self, net: impl Into<String>) -> AbstractPort {
+        let net = net.into();
+        let cell = self.cell.read().unwrap();
+        let port = cell
+            .abs
+            .as_ref()
+            .unwrap()
+            .ports
+            .iter()
+            .find(|p| p.net == net)
+            .unwrap();
+        port.transform(&self._transform())
     }
 
-    #[inline]
-    pub fn align_lefts(&mut self, other: &Self) -> &mut Self {
-        self.align(other, AlignMode::Left, 0)
+    pub fn ports(&self) -> Vec<AbstractPort> {
+        let cell = self.cell.read().unwrap();
+        let ports = &cell.abs.as_ref().unwrap().ports;
+        let xform = self._transform();
+        ports.iter().map(|p| p.transform(&xform)).collect()
+    }
+
+    pub fn has_abstract(&self) -> bool {
+        let cell = self.cell.read().unwrap();
+        cell.has_abstract()
     }
 
     pub fn reflect_vert_anchored(&mut self) -> &mut Self {
         let box0 = self.bbox();
         self.reflect_vert = !self.reflect_vert;
-
         let box1 = self.bbox();
         self.loc.y += box0.p0.y - box1.p0.y;
         self
@@ -309,6 +300,18 @@ impl Layers {
         &self.slots
     }
 
+    pub fn get_new_purpose(&self, num: i16, purpose: i16, to: LayerPurpose) -> Option<LayerKey> {
+        let lay = self.get_layer_from_spec(LayerSpec(num, purpose))?;
+        let purpose = lay.num(&to)?;
+        let (key, _) = self.get_from_spec(LayerSpec(num, purpose))?;
+        Some(key)
+    }
+
+    pub fn get_layer_from_spec(&self, spec: LayerSpec) -> Option<&Layer> {
+        let (key, _) = self.get_from_spec(spec)?;
+        self.get(key)
+    }
+
     pub fn get_from_spec(&self, spec: LayerSpec) -> Option<(LayerKey, LayerPurpose)> {
         for (k, layer) in self.slots().iter() {
             if layer.layernum != spec.0 {
@@ -319,6 +322,10 @@ impl Layers {
             }
         }
         None
+    }
+
+    pub fn get_layer_names(&self) -> Vec<&String> {
+        self.names.keys().collect()
     }
 }
 
@@ -419,6 +426,10 @@ impl Layer {
     pub fn num(&self, purpose: &LayerPurpose) -> Option<i16> {
         self.nums.get(purpose).copied()
     }
+    /// Retrieve a list of purpose number-[LayerPurpose] tuples
+    pub fn get_purps(&self) -> Vec<(&i16, &LayerPurpose)> {
+        self.purps.iter().collect()
+    }
 }
 
 /// Raw Abstract-Layout
@@ -451,7 +462,12 @@ impl Abstract {
         self.ports.push(port);
         self
     }
+
+    pub fn set_name(&mut self, name: impl Into<String>) {
+        self.name = name.into();
+    }
 }
+
 /// # Port Element for [Abstract]s
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct AbstractPort {
@@ -474,6 +490,49 @@ impl AbstractPort {
         let v = self.shapes.entry(layer).or_insert(Vec::with_capacity(1));
         v.push(shape);
         self
+    }
+
+    pub fn set_net(&mut self, net: impl Into<String>) -> &mut Self {
+        self.net = net.into();
+        self
+    }
+
+    /// Adds the shapes of `other` to this [`AbstractPort`].
+    pub fn merge(&mut self, other: Self) {
+        for (k, mut v) in other.shapes.into_iter() {
+            let shapes = self.shapes.entry(k).or_insert(Vec::new());
+            shapes.append(&mut v);
+        }
+    }
+
+    pub fn bbox(&self, layer: LayerKey) -> Option<BoundBox> {
+        if let Some(shapes) = self.shapes.get(&layer) {
+            let mut bbox = BoundBox::empty();
+            for s in shapes {
+                bbox = s.union(&bbox);
+            }
+            Some(bbox)
+        } else {
+            None
+        }
+    }
+
+    pub fn largest_rect(&self, layer: LayerKey) -> Option<Rect> {
+        let shapes = self.shapes.get(&layer)?;
+        let mut best = None;
+        let mut best_area = 0;
+        for s in shapes {
+            let r = match s {
+                Shape::Rect(r) => r,
+                _ => continue,
+            };
+            let area = r.area();
+            if area > best_area {
+                best_area = area;
+                best = Some(*r)
+            }
+        }
+        best
     }
 }
 
@@ -559,6 +618,11 @@ impl Cell {
             ..Default::default()
         }
     }
+
+    #[inline]
+    pub fn has_abstract(&self) -> bool {
+        self.abs.is_some()
+    }
 }
 impl From<Abstract> for Cell {
     fn from(src: Abstract) -> Self {
@@ -596,6 +660,13 @@ pub struct Layout {
     pub annotations: Vec<TextElement>,
 }
 impl Layout {
+    pub fn new(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            ..Default::default()
+        }
+    }
+
     /// Create a rectangular [BoundBox] surrounding all elements in the [Layout].
     pub fn bbox(&self) -> BoundBox {
         let mut bbox = BoundBox::empty();
@@ -611,6 +682,21 @@ impl Layout {
         }
         bbox
     }
+
+    pub fn add_inst<T>(&mut self, inst: T)
+    where
+        T: Into<Instance>,
+    {
+        self.insts.push(inst.into());
+    }
+
+    pub fn add<T>(&mut self, elem: T)
+    where
+        T: Into<Element>,
+    {
+        self.elems.push(elem.into());
+    }
+
     /// Flatten a [Layout], particularly its hierarchical instances, to a vector of [Element]s
     pub fn flatten(&self) -> LayoutResult<Vec<Element>> {
         // Kick off recursive calls, with the identity-transform applied for the top-level `layout`

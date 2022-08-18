@@ -6,13 +6,13 @@
 //!
 
 // Std-Lib
-use std::convert::TryFrom;
+use std::{collections::HashMap, convert::TryFrom, fmt::Display};
 
 // Crates.io
 use serde::{Deserialize, Serialize};
 
 // Local imports
-use crate::{bbox::BoundBoxTrait, Int};
+use crate::{align::AlignRect, bbox::BoundBoxTrait, AbstractPort, BoundBox, Int};
 
 /// # Point in two-dimensional layout-space
 #[derive(Debug, Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -67,12 +67,112 @@ impl Point {
         }
     }
 }
+
+#[derive(Debug, Clone, Copy, Hash, Serialize, Deserialize, PartialEq, Eq)]
+pub struct Span {
+    start: Int,
+    stop: Int,
+}
+
+/// Snaps `pos` to the nearest multiple of `grid`.
+pub fn snap_to_grid(pos: Int, grid: Int) -> Int {
+    assert!(grid > 0);
+
+    let rem = pos.rem_euclid(grid);
+    assert!(rem >= 0);
+    assert!(rem < grid);
+    if rem <= grid / 2 {
+        pos - rem
+    } else {
+        pos + grid - rem
+    }
+}
+
+impl Span {
+    pub fn new(start: Int, stop: Int) -> Self {
+        use std::cmp::{max, min};
+        let lower = min(start, stop);
+        let upper = max(start, stop);
+        Self {
+            start: lower,
+            stop: upper,
+        }
+    }
+
+    pub fn edge(&self, pos: bool) -> Int {
+        if pos {
+            self.stop
+        } else {
+            self.start
+        }
+    }
+
+    pub fn from_center_span(center: Int, span: Int) -> Self {
+        assert!(span >= 0);
+        assert_eq!(span % 2, 0);
+
+        Self::new(center - (span / 2), center + (span / 2))
+    }
+
+    pub fn from_center_span_gridded(center: Int, span: Int, grid: Int) -> Self {
+        assert!(span >= 0);
+        assert_eq!(span % 2, 0);
+        assert_eq!(span % grid, 0);
+
+        let start = snap_to_grid(center - (span / 2), grid);
+
+        Self::new(start, start + span)
+    }
+
+    #[inline]
+    pub fn center(&self) -> Int {
+        (self.start + self.stop) / 2
+    }
+
+    #[inline]
+    pub fn intersects(&self, other: &Self) -> bool {
+        !(other.stop < self.start || self.stop < other.start)
+    }
+
+    #[inline]
+    pub fn length(&self) -> Int {
+        self.stop - self.start
+    }
+
+    #[inline]
+    pub fn start(&self) -> Int {
+        self.start
+    }
+
+    #[inline]
+    pub fn stop(&self) -> Int {
+        self.stop
+    }
+}
+
+impl From<(Int, Int)> for Span {
+    #[inline]
+    fn from(tup: (Int, Int)) -> Self {
+        Self::new(tup.0, tup.1)
+    }
+}
+
+impl From<Span> for (Int, Int) {
+    #[inline]
+    fn from(s: Span) -> Self {
+        (s.start(), s.stop())
+    }
+}
+
 /// Direction Enumeration
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub enum Dir {
+    /// Horizontal.
     Horiz,
+    /// Vertical.
     Vert,
 }
+
 impl Dir {
     /// Whichever direction we are, return the other one.
     pub fn other(self) -> Self {
@@ -81,7 +181,30 @@ impl Dir {
             Self::Vert => Self::Horiz,
         }
     }
+    pub fn short_form(&self) -> &'static str {
+        match *self {
+            Self::Horiz => "h",
+            Self::Vert => "v",
+        }
+    }
 }
+
+impl Default for Dir {
+    #[inline]
+    fn default() -> Self {
+        Self::Horiz
+    }
+}
+
+impl Display for Dir {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            Self::Horiz => write!(f, "horizontal"),
+            Self::Vert => write!(f, "vertical"),
+        }
+    }
+}
+
 impl std::ops::Not for Dir {
     type Output = Self;
     /// Exclamation Operator returns the opposite direction
@@ -125,6 +248,167 @@ impl Rect {
     /// Calculate our center-point
     pub fn center(&self) -> Point {
         Point::new((self.p0.x + self.p1.x) / 2, (self.p0.y + self.p1.y) / 2)
+    }
+
+    pub fn new(p0: Point, p1: Point) -> Self {
+        Self { p0, p1 }
+    }
+
+    pub fn from_spans(h: Span, v: Span) -> Self {
+        Self {
+            p0: Point::new(h.start(), v.start()),
+            p1: Point::new(h.stop(), v.stop()),
+        }
+    }
+
+    #[inline]
+    pub fn bottom(&self) -> Int {
+        self.p0.y
+    }
+    #[inline]
+    pub fn top(&self) -> Int {
+        self.p1.y
+    }
+    #[inline]
+    pub fn left(&self) -> Int {
+        self.p0.x
+    }
+    #[inline]
+    pub fn right(&self) -> Int {
+        self.p1.x
+    }
+
+    pub fn hspan(&self) -> Span {
+        Span::new(self.p0.x, self.p1.x)
+    }
+
+    pub fn vspan(&self) -> Span {
+        Span::new(self.p0.y, self.p1.y)
+    }
+
+    #[inline]
+    pub fn width(&self) -> Int {
+        self.hspan().length()
+    }
+
+    #[inline]
+    pub fn area(&self) -> Int {
+        self.width() * self.height()
+    }
+
+    pub fn lower_edge(&self, dir: Dir) -> Int {
+        self.span(dir).start()
+    }
+
+    pub fn upper_edge(&self, dir: Dir) -> Int {
+        self.span(dir).stop()
+    }
+
+    pub fn span(&self, dir: Dir) -> Span {
+        match dir {
+            Dir::Horiz => self.hspan(),
+            Dir::Vert => self.vspan(),
+        }
+    }
+
+    fn sorted_edges(&self, other: &Self, dir: Dir) -> [Int; 4] {
+        let mut edges = [
+            self.lower_edge(dir),
+            self.upper_edge(dir),
+            other.lower_edge(dir),
+            other.upper_edge(dir),
+        ];
+        edges.sort();
+        edges
+    }
+
+    #[inline]
+    pub fn inner_span(&self, other: &Self, dir: Dir) -> Span {
+        let edges = self.sorted_edges(other, dir);
+        Span::new(edges[1], edges[2])
+    }
+
+    #[inline]
+    pub fn outer_span(&self, other: &Self, dir: Dir) -> Span {
+        let edges = self.sorted_edges(other, dir);
+        Span::new(edges[0], edges[3])
+    }
+
+    pub fn edge_closer_to(&self, x: Int, dir: Dir) -> Int {
+        let (x0, x1) = self.span(dir).into();
+        if (x - x0).abs() <= (x - x1).abs() {
+            x0
+        } else {
+            x1
+        }
+    }
+
+    pub fn edge_farther_from(&self, x: Int, dir: Dir) -> Int {
+        let (x0, x1) = self.span(dir).into();
+        if (x - x0).abs() <= (x - x1).abs() {
+            x1
+        } else {
+            x0
+        }
+    }
+
+    #[inline]
+    pub fn span_builder() -> RectSpanBuilder {
+        RectSpanBuilder::new()
+    }
+
+    #[inline]
+    pub fn height(&self) -> Int {
+        self.vspan().length()
+    }
+
+    pub fn longer_dir(&self) -> Dir {
+        if self.width() > self.height() {
+            Dir::Horiz
+        } else {
+            Dir::Vert
+        }
+    }
+
+    pub fn shorter_dir(&self) -> Dir {
+        !self.longer_dir()
+    }
+}
+
+impl AlignRect for Rect {}
+
+/// A helper struct for building [`Rect`]s from [`Span`]s.
+#[derive(Clone, Default, Eq, PartialEq, Hash, Serialize, Deserialize)]
+pub struct RectSpanBuilder {
+    hspan: Option<Span>,
+    vspan: Option<Span>,
+}
+
+impl RectSpanBuilder {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    pub fn with(&mut self, dir: Dir, span: Span) -> &mut Self {
+        match dir {
+            Dir::Horiz => self.hspan = Some(span),
+            Dir::Vert => self.vspan = Some(span),
+        }
+        self
+    }
+
+    /// Builds a Rect from the specified spans. Panics if one or more directions
+    /// were left unspecified.
+    pub fn build(&self) -> Rect {
+        Rect::from_spans(self.hspan.unwrap(), self.vspan.unwrap())
+    }
+}
+
+impl From<BoundBox> for Rect {
+    fn from(r: BoundBox) -> Self {
+        debug_assert!(r.p0.x <= r.p1.x);
+        debug_assert!(r.p0.y <= r.p1.y);
+        Self { p0: r.p0, p1: r.p1 }
     }
 }
 
@@ -486,6 +770,25 @@ impl TransformTrait for Path {
         Path {
             points: self.points.iter().map(|p| p.transform(trans)).collect(),
             width: self.width,
+        }
+    }
+}
+impl TransformTrait for AbstractPort {
+    /// Apply matrix-vector [Tranform] `trans`.
+    /// Creates a new shape at a location equal to the transformation of our own.
+    fn transform(&self, trans: &Transform) -> Self {
+        let shapes = self
+            .shapes
+            .iter()
+            .map(|(k, v)| {
+                let v = v.iter().map(|s| s.transform(trans)).collect::<Vec<_>>();
+                (k.clone(), v)
+            })
+            .collect::<HashMap<_, _>>();
+
+        Self {
+            net: self.net.clone(),
+            shapes,
         }
     }
 }

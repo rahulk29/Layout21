@@ -832,7 +832,7 @@ impl ErrorHelper for RawExporter {
             stack: self.ctx.clone(),
         }
     }
-    fn ok<T, E: std::error::Error + 'static>(
+    fn ok<T, E: std::error::Error + Send + Sync + 'static>(
         &self,
         res: Result<T, E>,
         msg: impl Into<String>,
