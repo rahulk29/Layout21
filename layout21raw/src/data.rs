@@ -347,7 +347,7 @@ pub enum LayerPurpose {
 }
 /// # Layer Specification
 /// As in seemingly every layout system, this uses two numbers to identify each layer.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub struct LayerSpec(i16, i16);
 impl LayerSpec {
     pub fn new(n1: i16, n2: i16) -> Self {
