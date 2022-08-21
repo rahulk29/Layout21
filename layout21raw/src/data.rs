@@ -191,7 +191,7 @@ impl Instance {
     }
 
     #[inline]
-    pub fn builder(&self) -> InstanceBuilder {
+    pub fn builder() -> InstanceBuilder {
         InstanceBuilder::default()
     }
 
