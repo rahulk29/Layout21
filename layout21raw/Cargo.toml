@@ -23,6 +23,7 @@ num-traits = "0.2.15"
 serde = { version = "1.0.137", features = ["derive"] }
 serde_derive = "1.0"
 slotmap = {version = "1.0", features = ["serde"]}
+derive_builder = "0.11"
 
 [features]
 # Break out each import/export format as a feature 

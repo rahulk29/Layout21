@@ -11,6 +11,7 @@ use std::hash::Hash;
 
 use gds21::GdsLayerSpec;
 // Crates.io
+use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SlotMap};
 
@@ -119,20 +120,24 @@ impl SiUnits {
 }
 
 /// Instance of another Cell
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Builder)]
 pub struct Instance {
     /// Instance Name
+    #[builder(setter(into))]
     pub inst_name: String,
     /// Cell Definition Reference
+    #[builder(setter(into))]
     pub cell: Ptr<Cell>,
     /// Location of `cell` origin
     /// regardless of rotation or reflection
     pub loc: Point,
     /// Vertical reflection,
     /// applied *before* rotation
+    #[builder(default)]
     pub reflect_vert: bool,
     /// Angle of rotation (degrees),
     /// Clockwise and applied *after* reflection
+    #[builder(default, setter(strip_option))]
     pub angle: Option<f64>,
 }
 
@@ -186,10 +191,16 @@ impl Instance {
     }
 
     #[inline]
+    pub fn builder(&self) -> InstanceBuilder {
+        InstanceBuilder::default()
+    }
+
+    #[inline]
     pub fn transform(&self) -> Transform {
         self._transform()
     }
 
+    #[inline]
     fn _transform(&self) -> Transform {
         Transform::from_instance(&self.loc, self.reflect_vert, self.angle)
     }
