@@ -25,6 +25,10 @@ impl Point {
     pub fn new(x: Int, y: Int) -> Self {
         Self { x, y }
     }
+    /// The origin, (0, 0).
+    pub fn zero() -> Self {
+        Self { x: 0, y: 0 }
+    }
     /// Create a new [Point] which serves as an offset in direction `dir`
     pub fn offset(val: Int, dir: Dir) -> Self {
         match dir {
