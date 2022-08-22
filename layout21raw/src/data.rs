@@ -570,6 +570,20 @@ impl Library {
             ..Default::default()
         }
     }
+
+    /// Finds the cell with the given name, if one exists.
+    ///
+    /// Note that this operation takes `O(n)` time in the worst
+    /// case, where `n` is the number of cells in the library.
+    pub fn cell(&self, name: &str) -> Option<Ptr<Cell>> {
+        self.cells
+            .iter()
+            .find(|c| {
+                let c = c.read().unwrap();
+                c.name == name
+            })
+            .cloned()
+    }
 }
 
 /// # Dependency-Orderer
