@@ -130,6 +130,7 @@ pub struct Instance {
     pub cell: Ptr<Cell>,
     /// Location of `cell` origin
     /// regardless of rotation or reflection
+    #[builder(default)]
     pub loc: Point,
     /// Vertical reflection,
     /// applied *before* rotation
