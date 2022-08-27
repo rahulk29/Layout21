@@ -410,6 +410,7 @@ impl RectSpanBuilder {
 
 impl From<BoundBox> for Rect {
     fn from(r: BoundBox) -> Self {
+        debug_assert!(!r.is_empty());
         debug_assert!(r.p0.x <= r.p1.x);
         debug_assert!(r.p0.y <= r.p1.y);
         Self { p0: r.p0, p1: r.p1 }
