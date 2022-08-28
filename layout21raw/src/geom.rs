@@ -103,6 +103,15 @@ impl Span {
         }
     }
 
+    pub fn expand(&mut self, pos: bool, amount: Int) -> &mut Self {
+        if pos {
+            self.stop += amount;
+        } else {
+            self.start -= amount;
+        }
+        self
+    }
+
     pub fn edge(&self, pos: bool) -> Int {
         if pos {
             self.stop
