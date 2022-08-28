@@ -212,11 +212,14 @@ impl Instance {
         let port = cell
             .abs
             .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Cell `{}` does not have an abstract", &cell.name))
             .unwrap()
             .ports
             .iter()
             .find(|p| p.net == net)
+            .ok_or_else(|| anyhow::anyhow!("No port named {net}"))
             .unwrap();
+
         port.transform(&self._transform())
     }
 
