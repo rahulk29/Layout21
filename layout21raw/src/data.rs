@@ -639,12 +639,25 @@ pub struct Cell {
     pub layout: Option<Layout>,
 }
 impl Cell {
-    /// Create a new and empty Cell named `name`
+    /// Create a new and empty Cell named `name`.
     pub fn new(name: impl Into<String>) -> Self {
         let name = name.into();
         Self {
             name,
             ..Default::default()
+        }
+    }
+
+    /// Creates a cell with empty abstract and layout views.
+    pub fn empty<S>(name: S) -> Self 
+    where S: Clone + Into<String> {
+        let abs = Some(Abstract::new(name.clone()));
+        let layout = Some(Layout::new(name.clone()));
+        let name = name.into();
+        Self {
+            name,
+            abs,
+            layout,
         }
     }
 
