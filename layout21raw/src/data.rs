@@ -649,16 +649,14 @@ impl Cell {
     }
 
     /// Creates a cell with empty abstract and layout views.
-    pub fn empty<S>(name: S) -> Self 
-    where S: Clone + Into<String> {
+    pub fn empty<S>(name: S) -> Self
+    where
+        S: Clone + Into<String>,
+    {
         let abs = Some(Abstract::new(name.clone()));
         let layout = Some(Layout::new(name.clone()));
         let name = name.into();
-        Self {
-            name,
-            abs,
-            layout,
-        }
+        Self { name, abs, layout }
     }
 
     #[inline]
