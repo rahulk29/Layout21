@@ -501,6 +501,12 @@ impl AbstractPort {
         }
     }
 
+    /// Renames this port
+    pub fn named(mut self, name: impl Into<String>) -> Self {
+        self.net = name.into();
+        self
+    }
+
     pub fn add_shape(&mut self, layer: LayerKey, shape: Shape) -> &mut Self {
         let v = self.shapes.entry(layer).or_insert(Vec::with_capacity(1));
         v.push(shape);
