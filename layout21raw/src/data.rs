@@ -669,7 +669,48 @@ impl Cell {
     pub fn has_abstract(&self) -> bool {
         self.abs.is_some()
     }
+
+    /// Gets a mutable reference to this cell's [`Layout`].
+    ///
+    /// Panics if the cell does not have a layout view.
+    #[inline]
+    pub fn layout_mut(&mut self) -> &mut Layout {
+        self.layout.as_mut().unwrap()
+    }
+
+    /// Gets a mutable reference to this cell's [`Abstract`].
+    ///
+    /// Panics if the cell does not have an abstract view.
+    #[inline]
+    pub fn abs_mut(&mut self) -> &mut Abstract {
+        self.abs.as_mut().unwrap()
+    }
+
+    /// Adds a new pin to the layout and abstract views of this cell, if they exist.
+    pub fn add_pin(&mut self, net: impl Into<String>, layer: LayerKey, rect: Rect) {
+        let net = net.into();
+        if let Some(ref mut layout) = self.layout {
+            layout.add_pin(net.clone(), layer, rect);
+        }
+        if let Some(ref mut abs) = self.abs {
+            let mut port = AbstractPort::new(net);
+            port.add_shape(layer, Shape::Rect(rect));
+            abs.add_port(port);
+        }
+    }
+
+    /// Adds a new pin to the layout and abstract views of this cell, if they exist.
+    pub fn add_pin_from_port(&mut self, port: AbstractPort, layer: LayerKey) {
+        if let Some(ref mut layout) = self.layout {
+            let rect = port.largest_rect(layer).unwrap();
+            layout.add_pin(port.net.clone(), layer, rect);
+        }
+        if let Some(ref mut abs) = self.abs {
+            abs.add_port(port);
+        }
+    }
 }
+
 impl From<Abstract> for Cell {
     fn from(src: Abstract) -> Self {
         Self {
@@ -752,7 +793,7 @@ impl Layout {
     }
 
     /// Creates a physical layout pin with the given layer, position and name.
-    pub fn add_pin(&mut self, layer: LayerKey, rect: Rect, net: impl Into<String>) {
+    pub fn add_pin(&mut self, net: impl Into<String>, layer: LayerKey, rect: Rect) {
         self.elems.push(Element {
             net: Some(net.into()),
             layer,
