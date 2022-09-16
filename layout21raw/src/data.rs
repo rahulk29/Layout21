@@ -750,6 +750,16 @@ impl Layout {
         flatten_helper(self, &Transform::identity(), &mut elems)?;
         Ok(elems)
     }
+
+    /// Creates a physical layout pin with the given layer, position and name.
+    pub fn add_pin(&mut self, layer: LayerKey, rect: Rect, net: impl Into<String>) {
+        self.elems.push(Element {
+            net: Some(net.into()),
+            layer,
+            inner: Shape::Rect(rect),
+            purpose: LayerPurpose::Pin,
+        });
+    }
 }
 /// Internal helper and core logic for [Layout::flatten].
 fn flatten_helper(
