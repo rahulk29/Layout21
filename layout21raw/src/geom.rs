@@ -161,6 +161,23 @@ impl Span {
     pub fn stop(&self) -> Int {
         self.stop
     }
+
+    pub fn merge(mut spans: impl Iterator<Item = Self>) -> Self {
+        use std::cmp::{max, min};
+        let (mut start, mut stop) = spans
+            .next()
+            .expect("Span::merge requires at least one span")
+            .into();
+
+        for span in spans {
+            start = min(start, span.start);
+            stop = max(stop, span.stop);
+        }
+
+        debug_assert!(start <= stop);
+
+        Span { start, stop }
+    }
 }
 
 impl From<(Int, Int)> for Span {
