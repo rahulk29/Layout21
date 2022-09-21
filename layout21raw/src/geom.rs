@@ -162,8 +162,9 @@ impl Span {
         self.stop
     }
 
-    pub fn merge(mut spans: impl IntoIterator<Item = Self>) -> Self {
+    pub fn merge(spans: impl IntoIterator<Item = Self>) -> Self {
         use std::cmp::{max, min};
+        let mut spans = spans.into_iter();
         let (mut start, mut stop) = spans
             .next()
             .expect("Span::merge requires at least one span")
