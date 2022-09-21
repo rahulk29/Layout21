@@ -162,7 +162,7 @@ impl Span {
         self.stop
     }
 
-    pub fn merge(mut spans: impl Iterator<Item = Self>) -> Self {
+    pub fn merge(mut spans: impl IntoIterator<Item = Self>) -> Self {
         use std::cmp::{max, min};
         let (mut start, mut stop) = spans
             .next()
