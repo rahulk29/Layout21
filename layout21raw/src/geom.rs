@@ -408,11 +408,25 @@ impl Rect {
     }
 
     #[inline]
-    pub fn expanded(&self, amount: Int) -> Self {
+    pub fn expand(&self, amount: Int) -> Self {
         Self::new(
             Point::new(self.p0.x - amount, self.p0.y - amount),
             Point::new(self.p1.x + amount, self.p1.y + amount),
         )
+    }
+
+    #[inline]
+    pub fn expand_dir(&self, dir: Dir, amount: Int) -> Self {
+        match dir {
+            Dir::Horiz => Self::new(
+                Point::new(self.p0.x - amount, self.p0.y),
+                Point::new(self.p1.x + amount, self.p1.y),
+            ),
+            Dir::Vert => Self::new(
+                Point::new(self.p0.x, self.p0.y - amount),
+                Point::new(self.p1.x, self.p1.y + amount),
+            ),
+        }
     }
 }
 
