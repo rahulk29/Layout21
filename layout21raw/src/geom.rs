@@ -393,6 +393,7 @@ impl Rect {
         self.vspan().length()
     }
 
+    #[inline]
     pub fn longer_dir(&self) -> Dir {
         if self.width() > self.height() {
             Dir::Horiz
@@ -401,8 +402,17 @@ impl Rect {
         }
     }
 
+    #[inline]
     pub fn shorter_dir(&self) -> Dir {
         !self.longer_dir()
+    }
+
+    #[inline]
+    pub fn expanded(&self, amount: Int) -> Self {
+        Self::new(
+            Point::new(self.p0.x - amount, self.p0.y - amount),
+            Point::new(self.p1.x + amount, self.p1.y + amount),
+        )
     }
 }
 
