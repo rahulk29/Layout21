@@ -801,6 +801,16 @@ impl Layout {
             purpose: LayerPurpose::Pin,
         });
     }
+
+    /// Draws a rectangle on the given layer.
+    pub fn draw_rect(&mut self, layer: LayerKey, rect: Rect) {
+        self.elems.push(Element {
+            net: None,
+            layer,
+            inner: Shape::Rect(rect),
+            purpose: LayerPurpose::Drawing,
+        });
+    }
 }
 /// Internal helper and core logic for [Layout::flatten].
 fn flatten_helper(
