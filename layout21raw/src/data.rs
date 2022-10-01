@@ -223,6 +223,23 @@ impl Instance {
         port.transform(&self._transform())
     }
 
+    pub fn ports_starting_with(&self, net: &str) -> Vec<AbstractPort> {
+        let cell = self.cell.read().unwrap();
+        let xform = self._transform();
+        let ports = cell
+            .abs
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Cell `{}` does not have an abstract", &cell.name))
+            .unwrap()
+            .ports
+            .iter()
+            .filter(|p| p.net.starts_with(net))
+            .map(|p| p.transform(&xform))
+            .collect();
+
+        ports
+    }
+
     pub fn ports(&self) -> Vec<AbstractPort> {
         let cell = self.cell.read().unwrap();
         let ports = &cell.abs.as_ref().unwrap().ports;
