@@ -703,6 +703,14 @@ impl Cell {
         self.layout.as_ref().unwrap()
     }
 
+    /// Gets an immutable reference to this cell's [`Abstract`].
+    ///
+    /// Panics if the cell does not have an abstract view.
+    #[inline]
+    pub fn abs(&self) -> &Abstract {
+        self.abs.as_ref().unwrap()
+    }
+
     /// Gets a mutable reference to this cell's [`Abstract`].
     ///
     /// Panics if the cell does not have an abstract view.
