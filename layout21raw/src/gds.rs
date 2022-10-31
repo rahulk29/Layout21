@@ -675,7 +675,7 @@ impl GdsImporter {
             }
             let (text_key, purp) = text_key.unwrap();
 
-            if purp == LayerPurpose::Label {
+            if purp == LayerPurpose::Label || purp == LayerPurpose::Pin {
                 let port = ports
                     .entry(net_name.clone())
                     .or_insert(AbstractPort::new(&net_name));
