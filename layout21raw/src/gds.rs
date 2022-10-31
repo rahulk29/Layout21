@@ -729,6 +729,7 @@ impl GdsImporter {
                 }
             } else {
                 // Import the text element as is
+                println!("Importing unattached GDSII text element `{}`", &net_name);
                 layout.elems.push(Element {
                     net: Some(net_name),
                     layer: text_key,
