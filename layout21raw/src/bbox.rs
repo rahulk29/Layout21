@@ -173,6 +173,7 @@ impl BoundBoxTrait for Shape {
             Shape::Rect(ref r) => BoundBox::from_points(&r.p0, &r.p1),
             Shape::Polygon(ref p) => (&p.points).bbox(),
             Shape::Path(ref p) => (&p.points).bbox(),
+            Shape::Point(ref p) => BoundBox::from_point(p),
         }
     }
 }

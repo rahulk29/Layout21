@@ -245,6 +245,7 @@ impl<'lib> ProtoExporter<'lib> {
             Shape::Rect(ref r) => Ok(ProtoShape::Rect(self.export_rect(r)?)),
             Shape::Polygon(ref p) => Ok(ProtoShape::Poly(self.export_polygon(p)?)),
             Shape::Path(ref p) => Ok(ProtoShape::Path(self.export_path(p)?)),
+            Shape::Point(_) => self.fail("Cannot export point shapes as protos"),
         }
     }
     /// Export a [Rect]
@@ -298,6 +299,7 @@ impl<'lib> ProtoExporter<'lib> {
             Shape::Rect(rect) => pshapes.rectangles.push(self.export_rect(rect)?),
             Shape::Polygon(poly) => pshapes.polygons.push(self.export_polygon(poly)?),
             Shape::Path(path) => pshapes.paths.push(self.export_path(path)?),
+            Shape::Point(_) => return self.fail("Cannot export point shapes as protos"),
         };
         Ok(())
     }

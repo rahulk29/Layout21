@@ -479,6 +479,7 @@ pub enum Shape {
     Rect(Rect),
     Polygon(Polygon),
     Path(Path),
+    Point(Point),
 }
 impl Shape {
     /// Boolean indication of whether we intersect with [Shape] `other`.
@@ -679,6 +680,32 @@ impl ShapeTrait for Path {
         unimplemented!("Path::to_poly")
     }
 }
+impl ShapeTrait for Point {
+    /// Retrieve our "origin", or first [Point]
+    fn point0(&self) -> &Point {
+        &self
+    }
+    /// Indicate whether this shape is (more or less) horizontal or vertical.
+    /// Primarily used for orienting label-text.
+    fn orientation(&self) -> Dir {
+        // FIXME: always horizontal, at least for now
+        Dir::Horiz
+    }
+    /// Shift coordinates by the (x,y) values specified in `pt`
+    fn shift(&mut self, pt: &Point) {
+        self.x += pt.x;
+        self.y += pt.y;
+    }
+    /// Boolean indication of whether the [Shape] contains [Point] `pt`.
+    /// Containment is *inclusive* for all [Shape] types.
+    /// [Point]s on their boundary, which generally include all points specifying the shape itself, are regarded throughout as "inside" the shape.
+    fn contains(&self, pt: &Point) -> bool {
+        *pt == *self
+    }
+    fn to_poly(&self) -> Polygon {
+        panic!("Cannot convert a Point to a Polygon")
+    }
+}
 
 /// # Matrix-Vector Transformation
 ///
@@ -793,6 +820,7 @@ impl TransformTrait for Shape {
             Shape::Rect(r) => Shape::Rect(r.transform(trans)),
             Shape::Polygon(p) => Shape::Polygon(p.transform(trans)),
             Shape::Path(p) => Shape::Path(p.transform(trans)),
+            Shape::Point(p) => Shape::Point(p.transform(trans)),
         }
     }
 }

@@ -147,6 +147,9 @@ impl<'lib> LefExporter<'lib> {
             Shape::Path { .. } => {
                 unimplemented!("LefExporter::PATH");
             }
+            Shape::Point(_) => {
+                unimplemented!("LefExporter::POINT");
+            }
         };
         // Wrap it in the [LefGeometry] enum (which also includes repetitions) and return it
         Ok(lef21::LefGeometry::Shape(inner))
