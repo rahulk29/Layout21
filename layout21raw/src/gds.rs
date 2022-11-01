@@ -674,17 +674,14 @@ impl GdsImporter {
                 continue;
             }
             let (text_key, purp) = text_key.unwrap();
+            let draw_key =
+                layer_map.get_new_purpose(textelem.layer, textelem.texttype, LayerPurpose::Drawing);
 
-            if purp == LayerPurpose::Label || purp == LayerPurpose::Pin {
+            if (purp == LayerPurpose::Label || purp == LayerPurpose::Pin) && draw_key.is_some() {
                 let port = ports
                     .entry(net_name.clone())
                     .or_insert(AbstractPort::new(&net_name));
                 if let Some(layer) = layers.get(&textelem.layer) {
-                    let draw_key = layer_map.get_new_purpose(
-                        textelem.layer,
-                        textelem.texttype,
-                        LayerPurpose::Drawing,
-                    );
                     if draw_key.is_none() {
                         println!(
                             "No drawing layer found for GDS layer ({}, {}).",
@@ -730,12 +727,12 @@ impl GdsImporter {
             } else {
                 // Import the text element as is
                 println!("Importing unattached GDSII text element `{}`", &net_name);
-                layout.elems.push(Element {
+                elems.insert(Element {
                     net: Some(net_name),
                     layer: text_key,
                     purpose: purp,
                     inner: Shape::Point(loc),
-                })
+                });
             }
         }
         drop(layer_map);
