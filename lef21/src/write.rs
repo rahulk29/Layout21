@@ -17,6 +17,10 @@ use super::data::*;
 /// Write a [LefLibrary] to file `fname`.  
 /// Fields are written in the LEF-recommended order.  
 pub fn save(lib: &LefLibrary, fname: impl AsRef<Path>) -> LefResult<()> {
+    if let Some(parent) = fname.as_ref().parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+
     let f = std::fs::File::create(fname)?;
     LefWriter::new(f).write_lib(lib)
 }
