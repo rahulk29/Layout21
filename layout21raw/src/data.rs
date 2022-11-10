@@ -257,6 +257,8 @@ impl Instance {
         self.reflect_vert = !self.reflect_vert;
         let box1 = self.bbox();
         self.loc.y += box0.p0.y - box1.p0.y;
+        let final_box = self.bbox();
+        debug_assert_eq!(final_box, box0);
         self
     }
 
@@ -270,7 +272,7 @@ impl Instance {
         self.loc.y += box0.p0.y - box1.p0.y;
 
         let final_box = self.bbox();
-        assert_eq!(final_box, box0);
+        debug_assert_eq!(final_box, box0);
 
         self
     }
