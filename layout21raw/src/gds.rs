@@ -246,13 +246,13 @@ impl<'lib> GdsExporter<'lib> {
             // Get the element's layer-numbers pair
             //
             // FIXME this is hacked so that elements with labeled nets export labels on the
-            // `LayerPurpose::Label` purpose.
+            // `LayerPurpose::Pin` purpose.
             // Elements with no shape are labels only, and we preserve their purpose when
             // exporting the label.
             let layerspec = if gds_elems.is_empty() {
                 self.export_layerspec(&elem.layer, &elem.purpose)?
             } else {
-                self.export_layerspec(&elem.layer, &LayerPurpose::Label)?
+                self.export_layerspec(&elem.layer, &LayerPurpose::Pin)?
             };
             gds_elems.push(self.export_shape_label(name, &elem.inner, &layerspec)?);
         }
